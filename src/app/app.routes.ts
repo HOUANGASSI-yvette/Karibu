@@ -4,24 +4,16 @@ import { LoginComponent } from './components/login/login';
 import { RegisterComponent } from './components/register/register';
 import { ListingsComponent } from './components/listings/listings';
 import { PropertyDetailComponent } from './components/property-detail/property-detail';
+import { DashboardComponent } from './components/dashboard/dashboard';
+import { PublishPropertyComponent } from './components/publish-property/publish-property';
 
 export const routes: Routes = [
-  // Page d'accueil
-  { path: '', component: LandingPage },
-
-  // Authentification
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
-
-  // ⚠️ GUARD: ajouter canActivate: [AuthGuard] une fois l'auth implémentée
-  // → protège les routes ci-dessous pour les utilisateurs connectés uniquement
-
-  // Liste des logements (page principale après connexion)
-  { path: 'listings', component: ListingsComponent },
-
-  // Détail d'un logement — :id = property.id retourné par l'API
-  { path: 'property/:id', component: PropertyDetailComponent },
-
-  // Redirection par défaut
+  { path: '',              component: LandingPage },
+  { path: 'login',         component: LoginComponent },
+  { path: 'register',      component: RegisterComponent },
+  { path: 'listings',      component: ListingsComponent },
+  { path: 'property/:id',  component: PropertyDetailComponent },
+  { path: 'dashboard',     component: DashboardComponent },
+  { path: 'publish',       component: PublishPropertyComponent },
   { path: '**', redirectTo: '' },
 ];

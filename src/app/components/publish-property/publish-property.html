@@ -1,0 +1,671 @@
+<!-- ============================================================ -->
+<!-- TEMPLATE : PublishPropertyComponent  —  /publish          -->
+<!-- Formulaire multi-étapes de publication d'un bien           -->
+<!-- ============================================================ -->
+
+<div class="min-h-screen bg-stone-100 flex flex-col">
+
+  <!-- ── Navbar ── -->
+  <nav class="bg-white border-b border-stone-200 px-4 lg:px-8 py-4 sticky top-0 z-20">
+    <div class="max-w-3xl mx-auto flex items-center justify-between">
+      <a routerLink="/dashboard" class="flex items-center gap-2 group">
+        <div class="w-9 h-9 bg-amber-800 flex items-center justify-center text-white font-bold text-sm group-hover:bg-amber-700 transition-colors">KA</div>
+        <span class="text-lg font-semibold text-stone-800 tracking-wide">KARIBU</span>
+      </a>
+      <a routerLink="/dashboard" class="text-sm text-stone-500 hover:text-amber-800 transition-colors flex items-center gap-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        Annuler
+      </a>
+    </div>
+  </nav>
+
+  <!-- ── Contenu ── -->
+  <div class="flex-1 max-w-3xl mx-auto w-full px-4 py-8">
+
+    <!-- En-tête -->
+    <div class="mb-8">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-1.5 h-6 bg-amber-800"></div>
+        <span class="text-xs font-medium text-stone-500 uppercase tracking-widest">Nouveau bien</span>
+      </div>
+      <h1 class="text-3xl font-light text-stone-900 tracking-tight">Publier un bien</h1>
+      <p class="text-stone-500 mt-1 text-sm">Complétez les étapes pour mettre votre bien en ligne.</p>
+    </div>
+
+    <!-- ── Indicateur d'étapes ── -->
+    <div class="flex items-center gap-0 mb-8">
+      @for (step of steps; track step.num) {
+        <div class="flex items-center" [class]="!$last ? 'flex-1' : ''">
+          <!-- Cercle étape -->
+          <button
+            (click)="goToStep(step.num)"
+            [disabled]="step.num > currentStep"
+            class="flex items-center gap-2 flex-shrink-0">
+            <div [class]="currentStep === step.num
+              ? 'w-8 h-8 bg-amber-800 flex items-center justify-center text-white text-xs font-bold'
+              : currentStep > step.num
+                ? 'w-8 h-8 bg-amber-800 flex items-center justify-center text-white text-xs'
+                : 'w-8 h-8 border border-stone-300 flex items-center justify-center text-stone-400 text-xs'">
+              @if (currentStep > step.num) { ✓ } @else { {{ step.num }} }
+            </div>
+            <span [class]="currentStep >= step.num
+              ? 'text-xs font-medium text-stone-700 hidden sm:block'
+              : 'text-xs text-stone-400 hidden sm:block'">
+              {{ step.label }}
+            </span>
+          </button>
+          <!-- Ligne entre étapes -->
+          @if (!$last) {
+            <div class="flex-1 h-px mx-3" [class]="currentStep > step.num ? 'bg-amber-800' : 'bg-stone-300'"></div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- ── Carte du formulaire ── -->
+    <div class="bg-white border border-stone-200">
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- ÉTAPE 1 : TYPE & LOCALISATION                      -->
+      <!-- ══════════════════════════════════════════════════ -->
+      @if (currentStep === 1) {
+        <div class="p-6 sm:p-8">
+          <h2 class="text-lg font-medium text-stone-900 mb-6 flex items-center gap-2">
+            <div class="w-6 h-6 bg-amber-800 flex items-center justify-center text-white text-xs font-bold">1</div>
+            Type & localisation
+          </h2>
+
+          <div class="space-y-5">
+
+            <!-- Titre de l'annonce -->
+            <div>
+              <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+                Titre de l'annonce <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="form.title"
+                name="title"
+                placeholder="Ex : Studio lumineux centre-ville Lomé"
+                maxlength="80"
+                class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200">
+              <p class="text-xs text-stone-400 mt-1 text-right">{{ form.title.length }}/80</p>
+            </div>
+
+            <!-- Type de bien -->
+            <div>
+              <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-3">
+                Type de bien <span class="text-red-500">*</span>
+              </label>
+              <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                @for (type of propertyTypes; track type[0]) {
+                  <button
+                    type="button"
+                    (click)="form.type = type[0]"
+                    [class]="form.type === type[0]
+                      ? 'py-2.5 px-3 text-xs font-medium border-2 border-amber-800 bg-amber-50 text-amber-800 transition-all duration-200'
+                      : 'py-2.5 px-3 text-xs text-stone-600 border border-stone-200 hover:border-amber-300 hover:bg-stone-50 transition-all duration-200'">
+                    {{ type[1] }}
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Ville + Quartier -->
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+                  Ville <span class="text-red-500">*</span>
+                </label>
+                <!-- ⚠️ API: liste chargée depuis GET /cities -->
+                <select
+                  [(ngModel)]="form.city"
+                  name="city"
+                  class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 appearance-none">
+                  <option value="" disabled>Sélectionnez une ville</option>
+                  @for (city of cities; track city) {
+                    <option [value]="city">{{ city }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+                  Quartier <span class="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  [(ngModel)]="form.district"
+                  name="district"
+                  placeholder="Ex : Tokoin, Bè, Adakpamé…"
+                  class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200">
+              </div>
+            </div>
+
+            <!-- Adresse complète (optionnelle) -->
+            <div>
+              <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+                Adresse complète <span class="text-stone-400 font-normal normal-case">(optionnel)</span>
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="form.address"
+                name="address"
+                placeholder="Rue, numéro, repère…"
+                class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200">
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+                Description <span class="text-red-500">*</span>
+              </label>
+              <textarea
+                [(ngModel)]="form.description"
+                name="description"
+                rows="5"
+                maxlength="1000"
+                placeholder="Décrivez votre bien : environnement, points forts, proximité des commodités, état général…"
+                class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 resize-none">
+              </textarea>
+              <p class="text-xs text-stone-400 mt-1 text-right">{{ form.description.length }}/1000</p>
+            </div>
+
+          </div>
+        </div>
+      }
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- ÉTAPE 2 : CARACTÉRISTIQUES                         -->
+      <!-- ══════════════════════════════════════════════════ -->
+      @if (currentStep === 2) {
+        <div class="p-6 sm:p-8">
+          <h2 class="text-lg font-medium text-stone-900 mb-6 flex items-center gap-2">
+            <div class="w-6 h-6 bg-amber-800 flex items-center justify-center text-white text-xs font-bold">2</div>
+            Caractéristiques
+          </h2>
+
+          <div class="space-y-6">
+
+            <!-- Surface + Pièces + Chambres + SdB -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+
+              <div>
+                <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+                  Surface (m²) <span class="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  [(ngModel)]="form.surface"
+                  name="surface"
+                  min="5" max="2000"
+                  placeholder="45"
+                  class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200">
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+                  Pièces <span class="text-red-500">*</span>
+                </label>
+                <!-- Sélecteur +/- -->
+                <div class="flex items-center border border-stone-200 bg-stone-50">
+                  <button type="button" (click)="form.rooms = form.rooms > 1 ? form.rooms - 1 : 1"
+                    class="w-10 h-11 flex items-center justify-center text-stone-600 hover:bg-stone-100 transition-colors text-lg font-light">−</button>
+                  <span class="flex-1 text-center text-sm font-medium text-stone-900">{{ form.rooms }}</span>
+                  <button type="button" (click)="form.rooms = form.rooms < 20 ? form.rooms + 1 : 20"
+                    class="w-10 h-11 flex items-center justify-center text-stone-600 hover:bg-stone-100 transition-colors text-lg font-light">+</button>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">Chambres</label>
+                <div class="flex items-center border border-stone-200 bg-stone-50">
+                  <button type="button" (click)="form.bedrooms = form.bedrooms > 0 ? form.bedrooms - 1 : 0"
+                    class="w-10 h-11 flex items-center justify-center text-stone-600 hover:bg-stone-100 transition-colors text-lg font-light">−</button>
+                  <span class="flex-1 text-center text-sm font-medium text-stone-900">{{ form.bedrooms }}</span>
+                  <button type="button" (click)="form.bedrooms = form.bedrooms < 20 ? form.bedrooms + 1 : 20"
+                    class="w-10 h-11 flex items-center justify-center text-stone-600 hover:bg-stone-100 transition-colors text-lg font-light">+</button>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">Sdb</label>
+                <div class="flex items-center border border-stone-200 bg-stone-50">
+                  <button type="button" (click)="form.bathrooms = form.bathrooms > 1 ? form.bathrooms - 1 : 1"
+                    class="w-10 h-11 flex items-center justify-center text-stone-600 hover:bg-stone-100 transition-colors text-lg font-light">−</button>
+                  <span class="flex-1 text-center text-sm font-medium text-stone-900">{{ form.bathrooms }}</span>
+                  <button type="button" (click)="form.bathrooms = form.bathrooms < 10 ? form.bathrooms + 1 : 10"
+                    class="w-10 h-11 flex items-center justify-center text-stone-600 hover:bg-stone-100 transition-colors text-lg font-light">+</button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Équipements -->
+            <div>
+              <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-3">
+                Équipements & services
+              </label>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                @for (amenity of availableAmenities; track amenity) {
+                  <button
+                    type="button"
+                    (click)="toggleAmenity(amenity)"
+                    [class]="form.amenities.includes(amenity)
+                      ? 'flex items-center gap-2 px-3 py-2.5 border-2 border-amber-800 bg-amber-50 text-amber-800 text-xs font-medium transition-all duration-200 text-left'
+                      : 'flex items-center gap-2 px-3 py-2.5 border border-stone-200 text-stone-600 text-xs hover:border-amber-300 hover:bg-stone-50 transition-all duration-200 text-left'">
+                    <div [class]="form.amenities.includes(amenity)
+                      ? 'w-3.5 h-3.5 bg-amber-800 flex items-center justify-center flex-shrink-0'
+                      : 'w-3.5 h-3.5 border border-stone-300 flex-shrink-0'">
+                      @if (form.amenities.includes(amenity)) {
+                        <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 12 12"><path d="M1 6l3.5 3.5L11 2"/></svg>
+                      }
+                    </div>
+                    {{ amenity }}
+                  </button>
+                }
+              </div>
+              @if (form.amenities.length > 0) {
+                <p class="text-xs text-amber-700 mt-2">{{ form.amenities.length }} équipement{{ form.amenities.length > 1 ? 's' : '' }} sélectionné{{ form.amenities.length > 1 ? 's' : '' }}</p>
+              }
+            </div>
+
+          </div>
+        </div>
+      }
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- ÉTAPE 3 : PHOTOS                                   -->
+      <!-- ══════════════════════════════════════════════════ -->
+      @if (currentStep === 3) {
+        <div class="p-6 sm:p-8">
+          <h2 class="text-lg font-medium text-stone-900 mb-2 flex items-center gap-2">
+            <div class="w-6 h-6 bg-amber-800 flex items-center justify-center text-white text-xs font-bold">3</div>
+            Photos
+          </h2>
+          <p class="text-sm text-stone-500 mb-6">
+            Ajoutez jusqu'à {{ MAX_PHOTOS }} photos. Max {{ MAX_SIZE_MB }} Mo par photo.
+            La première photo sera la photo de couverture.
+          </p>
+
+          <!-- Zone drag & drop -->
+          <!-- ⚠️ API: les fichiers (PhotoPreview.file) sont envoyés via FormData lors de onSubmit() -->
+          <div
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave()"
+            (drop)="onDrop($event)"
+            (click)="triggerFileInput()"
+            [class]="isDragOver
+              ? 'border-2 border-amber-800 bg-amber-50 cursor-pointer py-10 text-center transition-all duration-200 mb-5'
+              : 'border-2 border-dashed border-stone-300 hover:border-amber-400 bg-stone-50 hover:bg-amber-50 cursor-pointer py-10 text-center transition-all duration-200 mb-5'">
+
+            <!-- Input file caché -->
+            <input
+              id="photo-input"
+              type="file"
+              multiple
+              accept="image/*"
+              (change)="onFileSelect($event)"
+              class="hidden">
+
+            <div class="flex flex-col items-center gap-3">
+              <div class="w-14 h-14 border-2 border-dashed flex items-center justify-center"
+                [class]="isDragOver ? 'border-amber-800 bg-amber-100' : 'border-stone-300 bg-white'">
+                <svg class="w-6 h-6" [class]="isDragOver ? 'text-amber-800' : 'text-stone-400'"
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              @if (isDragOver) {
+                <p class="text-sm font-medium text-amber-800">Déposez les photos ici</p>
+              } @else {
+                <div>
+                  <p class="text-sm font-medium text-stone-700">Glissez vos photos ici</p>
+                  <p class="text-xs text-stone-500 mt-1">ou <span class="text-amber-800 underline">parcourez vos fichiers</span></p>
+                </div>
+                <p class="text-xs text-stone-400">JPG, PNG, WEBP · Max {{ MAX_SIZE_MB }} Mo · {{ photos.length }}/{{ MAX_PHOTOS }} photos</p>
+              }
+            </div>
+          </div>
+
+          <!-- Message d'erreur photo -->
+          @if (photoError) {
+            <div class="bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2 mb-5">
+              <span class="text-red-600 text-xs font-medium">{{ photoError }}</span>
+            </div>
+          }
+
+          <!-- Grille aperçu photos -->
+          @if (photos.length > 0) {
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              @for (photo of photos; track $index) {
+                <div class="relative group border border-stone-200 hover:border-amber-400 transition-colors overflow-hidden">
+
+                  <!-- Aperçu image -->
+                  <div class="h-32 bg-stone-100">
+                    <img [src]="photo.url" [alt]="photo.name" class="w-full h-full object-cover">
+                  </div>
+
+                  <!-- Badge couverture -->
+                  @if ($index === 0) {
+                    <div class="absolute top-2 left-2 bg-amber-800 text-white text-xs px-2 py-0.5 font-medium">
+                      Couverture
+                    </div>
+                  }
+
+                  <!-- Overlay actions -->
+                  <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                    @if ($index !== 0) {
+                      <button
+                        type="button"
+                        (click)="setCover($index)"
+                        class="bg-white text-stone-800 text-xs px-2 py-1 hover:bg-amber-800 hover:text-white transition-colors">
+                        Couverture
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      (click)="removePhoto($index)"
+                      class="bg-white text-red-600 text-xs px-2 py-1 hover:bg-red-600 hover:text-white transition-colors">
+                      Supprimer
+                    </button>
+                  </div>
+
+                  <!-- Info fichier -->
+                  <div class="px-2 py-1.5 bg-white border-t border-stone-100">
+                    <p class="text-xs text-stone-600 truncate">{{ photo.name }}</p>
+                    <p class="text-xs text-stone-400">{{ photo.size }}</p>
+                  </div>
+
+                </div>
+              }
+
+              <!-- Bouton ajouter plus (si < MAX_PHOTOS) -->
+              @if (photos.length < MAX_PHOTOS) {
+                <button
+                  type="button"
+                  (click)="triggerFileInput()"
+                  class="h-32 border-2 border-dashed border-stone-300 hover:border-amber-400 hover:bg-amber-50 flex flex-col items-center justify-center gap-2 text-stone-400 hover:text-amber-800 transition-all duration-200">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                    <path d="M12 4v16m8-8H4"/>
+                  </svg>
+                  <span class="text-xs">Ajouter</span>
+                </button>
+              }
+
+            </div>
+          }
+
+        </div>
+      }
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- ÉTAPE 4 : PRIX & DISPONIBILITÉ                     -->
+      <!-- ══════════════════════════════════════════════════ -->
+      @if (currentStep === 4) {
+        <div class="p-6 sm:p-8">
+          <h2 class="text-lg font-medium text-stone-900 mb-6 flex items-center gap-2">
+            <div class="w-6 h-6 bg-amber-800 flex items-center justify-center text-white text-xs font-bold">4</div>
+            Prix & disponibilité
+          </h2>
+
+          <div class="space-y-6">
+
+            <!-- Loyer mensuel -->
+            <div>
+              <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+                Loyer mensuel (CFA) <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <input
+                  type="number"
+                  [(ngModel)]="form.price"
+                  name="price"
+                  min="1000"
+                  placeholder="85000"
+                  class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 pr-16">
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-medium">CFA</span>
+              </div>
+              @if (form.price > 0) {
+                <p class="text-sm text-amber-800 font-medium mt-1.5">{{ formatPrice(form.price) }} CFA / mois</p>
+              }
+            </div>
+
+            <!-- Charges comprises -->
+            <div class="flex items-center gap-3">
+              <div
+                (click)="form.chargesIncluded = !form.chargesIncluded"
+                [class]="form.chargesIncluded
+                  ? 'w-5 h-5 bg-amber-800 border border-amber-800 flex items-center justify-center cursor-pointer flex-shrink-0'
+                  : 'w-5 h-5 border border-stone-300 cursor-pointer flex-shrink-0 hover:border-amber-400 transition-colors'">
+                @if (form.chargesIncluded) {
+                  <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 12 12"><path d="M1 6l3.5 3.5L11 2"/></svg>
+                }
+              </div>
+              <div>
+                <span class="text-sm font-medium text-stone-700 cursor-pointer" (click)="form.chargesIncluded = !form.chargesIncluded">
+                  Charges comprises
+                </span>
+                <p class="text-xs text-stone-500">Cochez si le loyer inclut eau, électricité, entretien…</p>
+              </div>
+            </div>
+
+            <!-- Disponibilité -->
+            <div>
+              <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-3">Disponibilité</label>
+              <div class="space-y-2">
+
+                <label class="flex items-center gap-3 cursor-pointer p-3 border transition-colors"
+                  [class]="form.available ? 'border-amber-800 bg-amber-50' : 'border-stone-200 hover:border-amber-300'"
+                  (click)="form.available = true">
+                  <div [class]="form.available
+                    ? 'w-4 h-4 border-4 border-amber-800 bg-white flex-shrink-0'
+                    : 'w-4 h-4 border border-stone-300 flex-shrink-0'">
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium text-stone-800">Disponible immédiatement</p>
+                    <p class="text-xs text-stone-500">Le bien peut être loué dès maintenant.</p>
+                  </div>
+                </label>
+
+                <label class="flex items-start gap-3 cursor-pointer p-3 border transition-colors"
+                  [class]="!form.available ? 'border-amber-800 bg-amber-50' : 'border-stone-200 hover:border-amber-300'"
+                  (click)="form.available = false">
+                  <div [class]="!form.available
+                    ? 'w-4 h-4 border-4 border-amber-800 bg-white flex-shrink-0 mt-0.5'
+                    : 'w-4 h-4 border border-stone-300 flex-shrink-0 mt-0.5'">
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-sm font-medium text-stone-800">Disponible à partir d'une date</p>
+                    @if (!form.available) {
+                      <input
+                        type="date"
+                        [(ngModel)]="form.availableFrom"
+                        name="availableFrom"
+                        (click)="$event.stopPropagation()"
+                        class="mt-2 w-full border border-stone-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-amber-400 transition-colors">
+                    }
+                  </div>
+                </label>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      }
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- ÉTAPE 5 : RÉCAPITULATIF                            -->
+      <!-- ══════════════════════════════════════════════════ -->
+      @if (currentStep === 5) {
+        <div class="p-6 sm:p-8">
+          <h2 class="text-lg font-medium text-stone-900 mb-6 flex items-center gap-2">
+            <div class="w-6 h-6 bg-amber-800 flex items-center justify-center text-white text-xs font-bold">5</div>
+            Vérification avant publication
+          </h2>
+
+          <!-- Aperçu photo de couverture -->
+          @if (photos.length > 0) {
+            <div class="relative h-48 mb-6 overflow-hidden border border-stone-200">
+              <img [src]="photos[0].url" [alt]="form.title" class="w-full h-full object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+                <div>
+                  <p class="text-white font-semibold text-lg">{{ form.title }}</p>
+                  <p class="text-white/80 text-sm">{{ form.district }}, {{ form.city }}</p>
+                </div>
+              </div>
+              <div class="absolute top-3 right-3 bg-amber-800 text-white text-xs px-2 py-1 font-medium">
+                {{ getTypeLabel(form.type) }}
+              </div>
+            </div>
+          }
+
+          <!-- Récap des données -->
+          <div class="space-y-4">
+
+            <!-- Infos générales -->
+            <div class="border border-stone-200">
+              <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-200">
+                <span class="text-xs font-medium text-stone-700 uppercase tracking-wider">Localisation</span>
+                <button (click)="goToStep(1)" class="text-xs text-amber-800 hover:underline">Modifier</button>
+              </div>
+              <div class="px-4 py-3 grid grid-cols-2 gap-y-2 text-sm">
+                <span class="text-stone-500">Type</span>        <span class="text-stone-900 font-medium">{{ getTypeLabel(form.type) }}</span>
+                <span class="text-stone-500">Ville</span>       <span class="text-stone-900 font-medium">{{ form.city }}</span>
+                <span class="text-stone-500">Quartier</span>    <span class="text-stone-900 font-medium">{{ form.district }}</span>
+                @if (form.address) {
+                  <span class="text-stone-500">Adresse</span>   <span class="text-stone-900 font-medium">{{ form.address }}</span>
+                }
+              </div>
+            </div>
+
+            <!-- Caractéristiques -->
+            <div class="border border-stone-200">
+              <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-200">
+                <span class="text-xs font-medium text-stone-700 uppercase tracking-wider">Caractéristiques</span>
+                <button (click)="goToStep(2)" class="text-xs text-amber-800 hover:underline">Modifier</button>
+              </div>
+              <div class="px-4 py-3 grid grid-cols-2 gap-y-2 text-sm">
+                <span class="text-stone-500">Surface</span>    <span class="text-stone-900 font-medium">{{ form.surface }} m²</span>
+                <span class="text-stone-500">Pièces</span>     <span class="text-stone-900 font-medium">{{ form.rooms }}</span>
+                <span class="text-stone-500">Chambres</span>   <span class="text-stone-900 font-medium">{{ form.bedrooms }}</span>
+                <span class="text-stone-500">Sdb</span>        <span class="text-stone-900 font-medium">{{ form.bathrooms }}</span>
+              </div>
+              @if (form.amenities.length > 0) {
+                <div class="px-4 pb-3 flex flex-wrap gap-1.5">
+                  @for (a of form.amenities; track a) {
+                    <span class="text-xs px-2 py-0.5 bg-stone-100 text-stone-600 border border-stone-200">{{ a }}</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Photos -->
+            <div class="border border-stone-200">
+              <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-200">
+                <span class="text-xs font-medium text-stone-700 uppercase tracking-wider">Photos ({{ photos.length }})</span>
+                <button (click)="goToStep(3)" class="text-xs text-amber-800 hover:underline">Modifier</button>
+              </div>
+              <div class="px-4 py-3 flex gap-2 overflow-x-auto">
+                @for (photo of photos; track $index) {
+                  <div class="relative flex-shrink-0">
+                    <img [src]="photo.url" [alt]="photo.name" class="w-16 h-16 object-cover border border-stone-200">
+                    @if ($index === 0) {
+                      <span class="absolute -bottom-1 left-0 right-0 bg-amber-800 text-white text-xs text-center py-0.5">★</span>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Prix -->
+            <div class="border border-stone-200">
+              <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-200">
+                <span class="text-xs font-medium text-stone-700 uppercase tracking-wider">Prix & disponibilité</span>
+                <button (click)="goToStep(4)" class="text-xs text-amber-800 hover:underline">Modifier</button>
+              </div>
+              <div class="px-4 py-3 grid grid-cols-2 gap-y-2 text-sm">
+                <span class="text-stone-500">Loyer</span>
+                <span class="text-stone-900 font-bold text-amber-800">
+                  {{ formatPrice(form.price) }} CFA / mois
+                  @if (form.chargesIncluded) { <span class="font-normal text-stone-500 text-xs">(cc)</span> }
+                </span>
+                <span class="text-stone-500">Disponible</span>
+                <span class="text-stone-900 font-medium">
+                  {{ form.available ? 'Immédiatement' : 'À partir du ' + form.availableFrom }}
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Message d'erreur global -->
+          @if (errorMessage) {
+            <div class="bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2 mt-4">
+              <span class="text-red-600 text-sm">{{ errorMessage }}</span>
+            </div>
+          }
+
+        </div>
+      }
+
+      <!-- ── Message d'erreur d'étape ── -->
+      @if (stepErrors[currentStep]) {
+        <div class="mx-6 sm:mx-8 mb-4 bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2">
+          <div class="w-4 h-4 bg-red-500 flex items-center justify-center flex-shrink-0">
+            <span class="text-white text-xs font-bold">!</span>
+          </div>
+          <p class="text-sm text-red-700">{{ stepErrors[currentStep] }}</p>
+        </div>
+      }
+
+      <!-- ── Boutons de navigation ── -->
+      <div class="px-6 sm:px-8 pb-8 flex gap-3">
+
+        @if (currentStep > 1) {
+          <button
+            type="button"
+            (click)="prevStep()"
+            class="px-6 py-3 border border-stone-200 text-stone-600 text-sm hover:bg-stone-50 hover:border-amber-300 transition-all duration-200">
+            ← Précédent
+          </button>
+        }
+
+        @if (currentStep < totalSteps) {
+          <button
+            type="button"
+            (click)="nextStep()"
+            class="flex-1 py-3 bg-amber-800 text-white font-medium text-sm hover:bg-amber-700 transition-all duration-200 hover:shadow-md">
+            Continuer →
+          </button>
+        }
+
+        @if (currentStep === totalSteps) {
+          <button
+            type="button"
+            (click)="onSubmit()"
+            [disabled]="isSubmitting"
+            class="flex-1 py-3.5 bg-amber-800 text-white font-semibold text-sm hover:bg-amber-700 transition-all duration-200 hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            @if (isSubmitting) {
+              <div class="w-4 h-4 border-2 border-white border-t-transparent animate-spin"></div>
+              <span>Publication en cours…</span>
+            } @else {
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>Publier mon bien</span>
+            }
+          </button>
+        }
+
+      </div>
+
+    </div>
+
+    <!-- Note de bas de page -->
+    <p class="text-center text-xs text-stone-400 mt-6">
+      Votre annonce sera vérifiée par notre équipe avant d'être publiée (sous 24h).
+    </p>
+
+  </div>
+</div>
