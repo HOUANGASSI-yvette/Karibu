@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-register',
@@ -11,6 +12,7 @@ import { CommonModule } from '@angular/common';
   styleUrl: './register.css',
 })
 export class RegisterComponent {
+  constructor(private authService: AuthService) {}
   currentStep = 1;
   selectedRole: 'tenant' | 'owner' | null = null;
   showPassword = false;
@@ -142,11 +144,34 @@ export class RegisterComponent {
     if (!this.acceptedTerms) return;
     this.isLoading = true;
 
-    // Simulate API call
-    setTimeout(() => {
-      this.isLoading = false;
-      this.currentStep = 4;
-      console.log('Registration data:', { ...this.registerData, role: this.selectedRole });
-    }, 1800);
+    // We generate a simple username from email since the backend expects a username
+    const generatedUsername = this.registerData.email.split('@')[0] + Math.floor(Math.random() * 1000);
+    
+    const payload = {
+      username: generatedUsername,
+      email: this.registerData.email,
+      password: this.registerData.password,
+      role: this.selectedRole === 'tenant' ? 'locataire' : 'proprietaire'
+    };
+
+    this.authService.register(payload).subscribe({
+      next: (res) => {
+        // Auto login with the tokens returned by registration
+        if (res.tokens) {
+          this.authService.setTokens({
+            access: res.tokens.access,
+            refresh: res.tokens.refresh
+          });
+          // Not calling currentUser.set(res.user) since authService is not injected here yet
+          // Wait, I need to inject AuthService in the constructor. Let's fix that.
+        }
+        this.isLoading = false;
+        this.currentStep = 4;
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.errorMessage = err.error?.detail || err.error?.email?.[0] || 'Erreur lors de l\'inscription.';
+      }
+    });
   }
 }
