@@ -1,18 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Property, PROPERTY_TYPE_LABELS } from '../../../models/property.model';
-
-// ============================================================
-// COMPOSANT : PropertyCardComponent
-// ============================================================
-// Carte réutilisable affichée dans la grille de listings.
-// Reçoit une propriété en @Input et navigue vers la page
-// de détail au clic sur "Voir plus".
-//
-// Utilisé dans : ListingsComponent (grille principale)
-// Navigue vers : /property/:id  (PropertyDetailComponent)
-// ============================================================
+import { Property } from '../../../services/property.service';
 
 @Component({
   selector: 'app-property-card',
@@ -22,20 +11,44 @@ import { Property, PROPERTY_TYPE_LABELS } from '../../../models/property.model';
 })
 export class PropertyCardComponent {
 
-  // ⚠️ API: les données viennent de PropertyService.getProperties()
-  //         et sont transmises via [property]="item" dans listings.html
   @Input() property!: Property;
 
-  // Accès aux labels traduits des types de biens
-  typeLabels = PROPERTY_TYPE_LABELS;
+  typeLabels: Record<string, string> = {
+    apartment:  'Appartement',
+    house:      'Maison',
+    studio:     'Studio',
+    villa:      'Villa',
+    office:     'Bureau',
+    land:       'Terrain',
+    commercial: 'Local commercial',
+  };
 
-  // Formater le prix en format lisible
-  // ⚠️ API: adapter si l'API retourne une devise différente
+
+  get coverPhotoUrl(): string {
+    if (this.property?.cover_photo) return this.property.cover_photo;
+    if (this.property?.photos?.length > 0) return this.property.photos[0].url;
+    return 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800';
+  }
+
+
+  get photoCount(): number {
+    return this.property?.photos?.length ?? 0;
+  }
+
+
+  get amenitiesPreview(): { id: number; name: string }[] {
+    return this.property?.amenities?.slice(0, 3) ?? [];
+  }
+
+  get extraAmenitiesCount(): number {
+    const total = this.property?.amenities?.length ?? 0;
+    return total > 3 ? total - 3 : 0;
+  }
+
   formatPrice(price: number): string {
     return new Intl.NumberFormat('fr-FR').format(price);
   }
 
-  // Gérer l'erreur de chargement d'image (fallback placeholder)
   onImageError(event: Event) {
     (event.target as HTMLImageElement).src =
       'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800';

@@ -28,7 +28,7 @@ export class LoginComponent implements OnInit {
   };
 
   constructor(
-    private router: Router, 
+    private router: Router,
     private route: ActivatedRoute,
     private authService: AuthService
   ) {}
@@ -40,8 +40,15 @@ export class LoginComponent implements OnInit {
           access: params['access_token'],
           refresh: params['refresh_token']
         });
-        // Might need to fetch user profile here if the backend didn't send it, but we can assume we are logged in.
-        this.redirectAfterLogin();
+        // Récupère le profil depuis le backend pour avoir le vrai rôle
+        this.authService.getProfile().subscribe({
+          next: (user) => {
+            this.authService.currentUser.set(user);
+            localStorage.setItem('user', JSON.stringify(user));
+            this.authService.redirectByRole(user);
+          },
+          error: () => this.router.navigate(['/'])
+        });
       }
     });
   }
@@ -69,6 +76,7 @@ export class LoginComponent implements OnInit {
     }
 
     this.isLoading = true;
+
     const payload = {
       username: this.loginData.email,
       password: this.loginData.password
@@ -81,12 +89,15 @@ export class LoginComponent implements OnInit {
           this.mfaRequired = true;
           this.mfaToken = res.mfa_token;
         } else {
-          this.redirectAfterLogin();
+          this.authService.redirectByRole(res.user);
         }
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.error?.detail || err.error?.non_field_errors?.[0] || 'Identifiants incorrects.';
+        this.errorMessage =
+          err.error?.detail ||
+          err.error?.non_field_errors?.[0] ||
+          'Identifiants incorrects.';
       }
     });
   }
@@ -98,9 +109,9 @@ export class LoginComponent implements OnInit {
     }
     this.isLoading = true;
     this.authService.verifyMfa(this.mfaToken, this.mfaCode).subscribe({
-      next: () => {
+      next: (res) => {
         this.isLoading = false;
-        this.redirectAfterLogin();
+        this.authService.redirectByRole(res.user);
       },
       error: (err) => {
         this.isLoading = false;
@@ -110,14 +121,20 @@ export class LoginComponent implements OnInit {
   }
 
   googleLogin() {
+
     window.location.href = 'http://localhost:8000/api/auth/google/';
   }
 
+
   private redirectAfterLogin() {
-    if (this.activeRole === 'tenant') {
-      this.router.navigate(['/listings']);
-    } else {
-      this.router.navigate(['/dashboard']);
+
+    const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+    if (returnUrl) {
+      this.router.navigateByUrl(returnUrl);
+      return;
     }
+    // Sinon redirection par rôle
+    const user = this.authService.getCurrentUser();
+    this.authService.redirectByRole(user);
   }
-}
+}

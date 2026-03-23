@@ -1,28 +1,20 @@
-<!-- ============================================================ -->
-<!-- TEMPLATE : PropertyDetailComponent  —  /property/:id      -->
-<!-- Page de détail d'un appartement avec galerie + réservation -->
-<!-- ============================================================ -->
-
 <div class="min-h-screen bg-stone-50">
 
-  <!-- ── Navbar ── -->
-  <nav class="bg-white border-b border-stone-200 px-4 sm:px-6 lg:px-8 py-4 sticky top-0 z-20">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <a routerLink="/" class="flex items-center gap-2 group">
-        <div class="w-9 h-9 bg-amber-800 flex items-center justify-center text-white font-bold text-sm group-hover:bg-amber-700 transition-colors">KA</div>
-        <span class="text-lg font-semibold text-stone-800 tracking-wide">KARIBU</span>
-      </a>
-      <!-- Fil d'Ariane -->
-      <div class="hidden sm:flex items-center gap-2 text-sm text-stone-500">
+  <!-- ✅ Navbar réutilisable -->
+  <app-navbar variant="public"></app-navbar>
+
+  <!-- Fil d'Ariane sous navbar -->
+  @if (!isLoading && property) {
+    <div class="bg-white border-b border-stone-100 px-4 sm:px-6 lg:px-8 py-3">
+      <div class="max-w-7xl mx-auto flex items-center gap-2 text-sm text-stone-500">
         <a routerLink="/listings" class="hover:text-amber-800 transition-colors">Logements</a>
         <span>›</span>
-        <span class="text-stone-700 truncate max-w-[200px]">{{ property?.title ?? '…' }}</span>
+        <span class="text-stone-700 truncate">{{ property.title }}</span>
       </div>
-      <a routerLink="/listings" class="text-sm text-amber-800 hover:underline">← Retour</a>
     </div>
-  </nav>
+  }
 
-  <!-- ── Chargement ── -->
+  <!-- Chargement -->
   @if (isLoading) {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-pulse">
       <div class="h-80 bg-stone-200 mb-6"></div>
@@ -38,41 +30,32 @@
     </div>
   }
 
-  <!-- ── Erreur ── -->
+  <!-- Erreur -->
   @if (errorMessage && !isLoading) {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-      <div class="w-14 h-14 bg-red-100 border border-red-200 flex items-center justify-center mx-auto mb-4">
-        <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
-          <path d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-        </svg>
-      </div>
+      <lucide-icon [img]="OfflineIcon" class="w-12 h-12 text-stone-300 mx-auto mb-4"></lucide-icon>
       <p class="text-stone-700 font-medium mb-4">{{ errorMessage }}</p>
-      <a routerLink="/listings" class="px-6 py-2.5 border border-amber-800 text-amber-800 text-sm hover:bg-amber-800 hover:text-white transition-all duration-200">
-        ← Retour aux logements
+      <a routerLink="/listings"
+         class="px-6 py-2.5 border border-amber-800 text-amber-800 text-sm hover:bg-amber-800 hover:text-white transition-all duration-200">
+        Retour aux logements
       </a>
     </div>
   }
 
-  <!-- ── Contenu principal ── -->
+  <!-- Contenu principal -->
   @if (property && !isLoading) {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-      <!-- ─── GALERIE PHOTOS ─── -->
-      <!-- ⚠️ API: property.photos = tableau d'URLs retournées par l'API -->
+      <!-- GALERIE -->
       <div class="mb-8">
-
-        <!-- Photo principale -->
         <div class="relative h-72 sm:h-96 lg:h-[480px] bg-stone-200 overflow-hidden mb-2">
-          <img
-            [src]="property.photos[activePhotoIndex]"
-            [alt]="property.title"
-            (error)="onImageError($event)"
-            class="w-full h-full object-cover transition-opacity duration-300">
+          <img [src]="activePhotoUrl" [alt]="property.title"
+               (error)="onImageError($event)"
+               class="w-full h-full object-cover transition-opacity duration-300">
 
-          <!-- Badges -->
           <div class="absolute top-4 left-4 flex gap-2">
             <span class="px-3 py-1 bg-amber-800 text-white text-xs font-medium">
-              {{ typeLabels[property.type] }}
+              {{ typeLabels[property.type] || property.type }}
             </span>
             @if (property.available) {
               <span class="px-3 py-1 bg-white text-stone-700 text-xs font-medium border border-stone-200">
@@ -80,51 +63,55 @@
               </span>
             } @else {
               <span class="px-3 py-1 bg-stone-700 text-white text-xs font-medium">
-                Disponible le {{ property.availableFrom | date:'dd/MM/yyyy' }}
+                Bientôt disponible
               </span>
             }
           </div>
 
-          <!-- Navigation photos (si plusieurs) -->
-          @if (property.photos.length > 1) {
-            <button (click)="prevPhoto()" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors">‹</button>
-            <button (click)="nextPhoto()" class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors">›</button>
+          @if (totalPhotos > 1) {
+            <button (click)="prevPhoto()"
+                    class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors">
+              <lucide-icon [img]="PrevIcon" class="w-5 h-5"></lucide-icon>
+            </button>
+            <button (click)="nextPhoto()"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors">
+              <lucide-icon [img]="NextIcon" class="w-5 h-5"></lucide-icon>
+            </button>
             <div class="absolute bottom-4 right-4 bg-black/40 text-white text-xs px-2 py-1">
-              {{ activePhotoIndex + 1 }} / {{ property.photos.length }}
+              {{ activePhotoIndex + 1 }} / {{ totalPhotos }}
             </div>
           }
         </div>
 
-        <!-- Miniatures -->
-        @if (property.photos.length > 1) {
+        @if (totalPhotos > 1) {
           <div class="flex gap-2 overflow-x-auto">
-            @for (photo of property.photos; track $index) {
-              <button
-                (click)="selectPhoto($index)"
-                [class]="activePhotoIndex === $index
+            @for (photo of property.photos; track photo.id; let i = $index) {
+              <button (click)="selectPhoto(i)"
+                      [class]="activePhotoIndex === i
                   ? 'flex-shrink-0 w-20 h-16 border-2 border-amber-800 overflow-hidden'
                   : 'flex-shrink-0 w-20 h-16 border border-stone-200 overflow-hidden opacity-60 hover:opacity-100 transition-opacity'">
-                <img [src]="photo" [alt]="'Photo ' + ($index + 1)" (error)="onImageError($event)" class="w-full h-full object-cover">
+                <img [src]="photo.url" [alt]="'Photo ' + (i + 1)"
+                     (error)="onImageError($event)"
+                     class="w-full h-full object-cover">
               </button>
             }
           </div>
         }
       </div>
 
-      <!-- ─── GRILLE PRINCIPALE : infos + panneau réservation ─── -->
+      <!-- GRILLE PRINCIPALE -->
       <div class="grid lg:grid-cols-3 gap-8">
 
-        <!-- ── Colonne gauche : détails ── -->
-        <div class="lg:col-span-2 space-y-8">
+        <!-- Colonne gauche -->
+        <div class="lg:col-span-2 space-y-6">
 
-          <!-- En-tête : titre, prix, localisation -->
+          <!-- Titre + prix + caractéristiques -->
           <div class="bg-white border border-stone-200 p-6">
             <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
               <div>
                 <h1 class="text-2xl font-semibold text-stone-900 mb-1">{{ property.title }}</h1>
-                <!-- ⚠️ API: property.district + property.city -->
                 <div class="flex items-center gap-1.5 text-stone-500 text-sm">
-                  <svg class="w-4 h-4 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <svg class="w-4 h-4 text-amber-800 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                     <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                     <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                   </svg>
@@ -132,15 +119,17 @@
                   @if (property.address) { · {{ property.address }} }
                 </div>
               </div>
-              <!-- ⚠️ API: property.price + property.chargesIncluded -->
               <div class="text-right">
-                <div class="text-3xl font-bold text-amber-800">{{ formatPrice(property.price) }}<span class="text-base font-normal text-stone-500"> CFA</span></div>
-                <div class="text-sm text-stone-500">par mois {{ property.chargesIncluded ? '(charges comprises)' : '(hors charges)' }}</div>
+                <div class="text-3xl font-bold text-amber-800">
+                  {{ formatPrice(property.price) }}
+                  <span class="text-base font-normal text-stone-500"> CFA</span>
+                </div>
+                <div class="text-sm text-stone-500">
+                  par mois {{ property.charges_included ? '(charges comprises)' : '(hors charges)' }}
+                </div>
               </div>
             </div>
 
-            <!-- Caractéristiques principales -->
-            <!-- ⚠️ API: property.surface, property.rooms, property.bedrooms, property.bathrooms -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-stone-100">
               <div class="text-center p-3 bg-stone-50 border border-stone-200">
                 <div class="text-xl font-semibold text-stone-900">{{ property.surface }}</div>
@@ -161,8 +150,7 @@
             </div>
           </div>
 
-          <!-- Description complète -->
-          <!-- ⚠️ API: property.description (texte long retourné par l'API) -->
+          <!-- Description -->
           <div class="bg-white border border-stone-200 p-6">
             <h2 class="text-sm font-medium text-stone-900 uppercase tracking-widest mb-4 flex items-center gap-2">
               <div class="w-1 h-4 bg-amber-800"></div>
@@ -171,29 +159,27 @@
             <p class="text-stone-600 leading-relaxed whitespace-pre-line">{{ property.description }}</p>
           </div>
 
-          <!-- Équipements / Aménités -->
-          <!-- ⚠️ API: property.amenities (tableau de strings) -->
-          <div class="bg-white border border-stone-200 p-6">
-            <h2 class="text-sm font-medium text-stone-900 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <div class="w-1 h-4 bg-amber-800"></div>
-              Équipements & services
-            </h2>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              @for (amenity of property.amenities; track amenity) {
-                <div class="flex items-center gap-2 text-sm text-stone-700">
-                  <div class="w-5 h-5 bg-amber-50 border border-amber-200 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-3 h-3 text-amber-800" fill="currentColor" viewBox="0 0 12 12">
-                      <path d="M1 6l3.5 3.5L11 2"/>
-                    </svg>
+          <!-- Équipements -->
+          @if ((property.amenities.length) > 0) {
+            <div class="bg-white border border-stone-200 p-6">
+              <h2 class="text-sm font-medium text-stone-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <div class="w-1 h-4 bg-amber-800"></div>
+                Équipements et services
+              </h2>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                @for (amenity of property.amenities; track amenity.id) {
+                  <div class="flex items-center gap-2 text-sm text-stone-700">
+                    <div class="w-5 h-5 bg-amber-50 border border-amber-200 flex items-center justify-center flex-shrink-0">
+                      <lucide-icon [img]="CheckIcon" class="w-3 h-3 text-amber-800"></lucide-icon>
+                    </div>
+                    {{ amenity.name }}
                   </div>
-                  {{ amenity }}
-                </div>
-              }
+                }
+              </div>
             </div>
-          </div>
+          }
 
           <!-- Propriétaire -->
-          <!-- ⚠️ API: property.ownerName, property.ownerPhone, property.ownerId -->
           <div class="bg-white border border-stone-200 p-6">
             <h2 class="text-sm font-medium text-stone-900 uppercase tracking-widest mb-4 flex items-center gap-2">
               <div class="w-1 h-4 bg-amber-800"></div>
@@ -201,16 +187,12 @@
             </h2>
             <div class="flex items-center gap-4">
               <div class="w-12 h-12 bg-amber-800 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                {{ property.ownerName.charAt(0) }}
+                {{ ownerInitial }}
               </div>
               <div>
-                <div class="font-medium text-stone-900">{{ property.ownerName }}</div>
-                @if (property.ownerPhone) {
-                  <!-- ⚠️ API: afficher le téléphone seulement si utilisateur connecté -->
-                  <div class="text-sm text-stone-500">{{ property.ownerPhone }}</div>
-                }
+                <div class="font-medium text-stone-900">{{ property.owner_name }}</div>
                 <div class="text-xs text-stone-400 mt-0.5">
-                  Annonce publiée le {{ property.createdAt | date:'dd/MM/yyyy' }}
+                  Annonce publiée le {{ property.created_at | date:'dd/MM/yyyy' }}
                 </div>
               </div>
             </div>
@@ -218,93 +200,85 @@
 
         </div>
 
-        <!-- ── Colonne droite : panneau de réservation ── -->
+        <!-- Colonne droite — Réservation -->
         <div class="lg:col-span-1">
           <div class="bg-white border border-stone-200 sticky top-20">
 
-            <!-- Prix récap -->
-            <div class="p-5 border-b border-stone-200 bg-amber-800 text-white">
+            <div class="p-5 bg-amber-800 text-white">
               <div class="text-2xl font-bold">{{ formatPrice(property.price) }} CFA</div>
-              <div class="text-amber-200 text-sm">par mois {{ property.chargesIncluded ? '(cc)' : '' }}</div>
+              <div class="text-amber-200 text-sm">
+                par mois {{ property.charges_included ? '(cc)' : '' }}
+              </div>
             </div>
 
             <div class="p-5">
 
-              <!-- Succès réservation -->
               @if (reservationSuccess) {
                 <div class="text-center py-4">
                   <div class="w-12 h-12 bg-amber-800 flex items-center justify-center mx-auto mb-3">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+                    <lucide-icon [img]="CheckIcon" class="w-6 h-6 text-white"></lucide-icon>
                   </div>
                   <p class="font-medium text-stone-900 mb-1">Demande envoyée !</p>
                   <p class="text-sm text-stone-500">Le propriétaire vous contactera bientôt.</p>
                 </div>
               }
 
-              <!-- Formulaire réservation -->
               @if (!reservationSuccess) {
 
                 @if (!showReservationForm) {
-                  <!-- Bouton principal RÉSERVER -->
-                  <button
-                    (click)="showReservationForm = true"
-                    [disabled]="!property.available"
-                    class="w-full py-4 bg-amber-800 text-white font-semibold hover:bg-amber-700 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed text-base mb-3">
-                    @if (property.available) { Réserver ce logement }
-                    @else { Indisponible pour l'instant }
+                  <button (click)="showReservationForm = true"
+                          [disabled]="!property.available"
+                          class="w-full py-4 bg-amber-800 text-white font-semibold hover:bg-amber-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-base mb-3">
+                    {{ property.available ? 'Réserver ce logement' : 'Indisponible pour l\'instant' }}
                   </button>
 
-                  @if (!property.available && property.availableFrom) {
+                  @if (!property.available && property.available_from) {
                     <p class="text-xs text-center text-stone-500 mb-3">
-                      Disponible à partir du {{ property.availableFrom | date:'dd/MM/yyyy' }}
+                      Disponible à partir du {{ property.available_from | date:'dd/MM/yyyy' }}
                     </p>
                   }
 
-                  <button class="w-full py-3 border border-stone-200 text-stone-700 text-sm hover:border-amber-400 hover:bg-stone-50 transition-all duration-200">
+                  <button class="w-full py-3 border border-stone-200 text-stone-700 text-sm hover:border-amber-400 hover:bg-stone-50 transition-all duration-200 flex items-center justify-center gap-2">
+                    <lucide-icon [img]="MessageIcon" class="w-4 h-4"></lucide-icon>
                     Contacter le propriétaire
                   </button>
                 }
 
-                <!-- Formulaire de demande -->
                 @if (showReservationForm) {
                   <div class="space-y-4">
                     <h3 class="font-medium text-stone-900 text-sm">Votre demande</h3>
 
-                    <!-- Date de visite souhaitée -->
-                    <!-- ⚠️ API: envoyé dans ReservationRequest.visitDate -->
                     <div>
-                      <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-1.5">Date de visite souhaitée</label>
-                      <input
-                        type="date"
-                        [(ngModel)]="visitDate"
-                        [min]="today"
-                        class="w-full border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200">
+                      <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-1.5">
+                        Date de visite souhaitée
+                      </label>
+                      <input type="date" [(ngModel)]="visitDate" [min]="today"
+                             class="w-full border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all">
                     </div>
 
-                    <!-- Message au propriétaire -->
-                    <!-- ⚠️ API: envoyé dans ReservationRequest.message -->
                     <div>
-                      <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-1.5">Message (optionnel)</label>
-                      <textarea
-                        [(ngModel)]="reservationMessage"
-                        rows="3"
-                        placeholder="Présentez-vous brièvement…"
-                        class="w-full border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 resize-none">
+                      <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-1.5">
+                        Message (optionnel)
+                      </label>
+                      <textarea [(ngModel)]="reservationMessage" rows="3"
+                                placeholder="Présentez-vous brièvement…"
+                                class="w-full border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all resize-none">
                       </textarea>
                     </div>
 
                     @if (reservationError) {
-                      <p class="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2">{{ reservationError }}</p>
+                      <p class="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2">
+                        {{ reservationError }}
+                      </p>
                     }
 
                     <div class="flex gap-2">
-                      <button (click)="showReservationForm = false" class="flex-1 py-2.5 border border-stone-200 text-stone-600 text-sm hover:bg-stone-50 transition-colors">
+                      <button (click)="showReservationForm = false"
+                              class="flex-1 py-2.5 border border-stone-200 text-stone-600 text-sm hover:bg-stone-50 transition-colors">
                         Annuler
                       </button>
-                      <button
-                        (click)="submitReservation()"
-                        [disabled]="isSubmitting"
-                        class="flex-1 py-2.5 bg-amber-800 text-white text-sm font-medium hover:bg-amber-700 transition-all duration-200 disabled:opacity-60 flex items-center justify-center gap-1.5">
+                      <button (click)="submitReservation()" [disabled]="isSubmitting"
+                              class="flex-1 py-2.5 bg-amber-800 text-white text-sm font-medium hover:bg-amber-700 transition-all disabled:opacity-60 flex items-center justify-center gap-1.5">
                         @if (isSubmitting) {
                           <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin"></div>
                         }
@@ -314,21 +288,15 @@
                   </div>
                 }
               }
-
             </div>
 
-            <!-- Infos rapides -->
-            <div class="px-5 pb-5 space-y-2">
+            <div class="px-5 pb-5 space-y-2 border-t border-stone-100 pt-4">
               <div class="flex items-center gap-2 text-xs text-stone-500">
-                <svg class="w-3.5 h-3.5 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                </svg>
+                <lucide-icon [img]="ShieldIcon" class="w-3.5 h-3.5 text-amber-800"></lucide-icon>
                 Annonce vérifiée par KARIBU
               </div>
               <div class="flex items-center gap-2 text-xs text-stone-500">
-                <svg class="w-3.5 h-3.5 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                </svg>
+                <lucide-icon [img]="MessageIcon" class="w-3.5 h-3.5 text-amber-800"></lucide-icon>
                 Réponse sous 24h en général
               </div>
             </div>

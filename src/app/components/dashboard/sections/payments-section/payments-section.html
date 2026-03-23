@@ -1,0 +1,93 @@
+<div class="mb-6">
+  <h1 class="text-2xl font-light text-stone-900">Paiements</h1>
+  <p class="text-stone-500 text-sm mt-1">Suivi des loyers et génération de quittances</p>
+</div>
+
+<div class="grid grid-cols-3 gap-4 mb-6">
+  <div class="bg-white border border-stone-200 p-4 text-center">
+    <p class="text-xl font-bold text-green-700">{{ countPayments('paid') }}</p>
+    <p class="text-xs text-stone-500 mt-1">Reçus</p>
+  </div>
+  <div class="bg-white border border-stone-200 p-4 text-center">
+    <p class="text-xl font-bold text-amber-700">{{ countPayments('pending') }}</p>
+    <p class="text-xs text-stone-500 mt-1">En attente</p>
+  </div>
+  <div class="bg-white border border-stone-200 p-4 text-center">
+    <p class="text-xl font-bold text-red-600">{{ countPayments('late') }}</p>
+    <p class="text-xs text-stone-500 mt-1">En retard</p>
+  </div>
+</div>
+
+<div class="bg-white border border-stone-200 overflow-hidden">
+  <div class="px-5 py-4 border-b border-stone-100">
+    <h3 class="text-sm font-medium text-stone-800">Tous les paiements</h3>
+  </div>
+  <div class="divide-y divide-stone-100">
+    @for (pay of payments; track pay.id) {
+      <div class="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-stone-50 transition-colors">
+        <div class="w-9 h-9 bg-stone-200 flex items-center justify-center text-xs font-bold text-stone-700 flex-shrink-0">
+          {{ pay.tenantName.charAt(0) }}{{ pay.tenantName.split(' ')[1]?.charAt(0) }}
+        </div>
+        <div class="flex-1 min-w-[150px]">
+          <p class="text-sm font-medium text-stone-900">{{ pay.tenantName }}</p>
+          <p class="text-xs text-stone-500">{{ pay.propertyTitle }} · {{ pay.month }}</p>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <span class="font-semibold text-stone-900 text-sm">{{ formatPrice(pay.amount) }} CFA</span>
+          <span class="text-xs px-2 py-0.5 border" [class]="getStatusClass(pay.status)">{{ getStatusLabel(pay.status) }}</span>
+          @if (pay.paidAt) {
+            <span class="text-xs text-stone-400">{{ pay.paidAt | date:'dd/MM/yy' }}</span>
+          }
+        </div>
+        @if (pay.status === 'paid') {
+          <button (click)="openQuittance(pay.id)"
+                  class="px-3 py-1.5 text-xs border border-amber-800 text-amber-800 hover:bg-amber-800 hover:text-white transition-all duration-200 flex items-center gap-1.5 flex-shrink-0">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+            Quittance
+          </button>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Modal quittance -->
+@if (showQuittanceModal) {
+  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4">
+    <div class="bg-white border border-stone-200 w-full max-w-sm">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-stone-200">
+        <h3 class="font-medium text-stone-900">Générer une quittance</h3>
+        <button (click)="showQuittanceModal = false" class="text-stone-400 hover:text-stone-700 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      @if (getPaymentForModal(); as pay) {
+        <div class="p-6 space-y-3">
+          <div class="bg-stone-50 border border-stone-200 p-4 space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-stone-500">Locataire</span>
+              <span class="font-medium text-stone-900">{{ pay.tenantName }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-stone-500">Bien</span>
+              <span class="font-medium text-stone-900">{{ pay.propertyTitle }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-stone-500">Période</span>
+              <span class="font-medium text-stone-900">{{ pay.month }}</span>
+            </div>
+            <div class="flex justify-between border-t border-stone-200 pt-2 mt-2">
+              <span class="text-stone-500">Montant</span>
+              <span class="font-bold text-amber-800">{{ formatPrice(pay.amount) }} CFA</span>
+            </div>
+          </div>
+          <button (click)="downloadQuittance()"
+                  class="w-full py-3 bg-amber-800 text-white font-medium text-sm hover:bg-amber-700 transition-colors flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+            Télécharger la quittance PDF
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+}

@@ -1,0 +1,48 @@
+<header class="bg-white border-b border-stone-200 px-4 lg:px-8 fixed top-0 z-30 h-16 w-full flex items-center">
+  <div class="w-full flex items-center justify-between">
+
+    <a routerLink="/" class="flex items-center gap-2 group flex-shrink-0">
+      <div class="w-8 h-8 bg-amber-800 flex items-center justify-center text-white font-bold text-sm group-hover:bg-amber-700 transition-colors">KA</div>
+      <span class="text-base font-semibold text-stone-800 tracking-wide hidden sm:block">KARIBU</span>
+    </a>
+
+    <div class="flex items-center gap-2">
+
+      <a routerLink="/notifications"
+         class="relative w-9 h-9 border border-stone-200 bg-stone-50 flex items-center justify-center hover:border-amber-400 transition-colors">
+        <svg class="w-4 h-4 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+        </svg>
+      </a>
+
+      <a routerLink="/messages"
+         class="relative w-9 h-9 border border-stone-200 bg-stone-50 flex items-center justify-center hover:border-amber-400 transition-colors">
+        <svg class="w-4 h-4 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        @if (unreadCount > 0) {
+          <span class="absolute -top-1 -right-1 w-4 h-4 bg-amber-800 text-white text-[10px] flex items-center justify-center font-bold">
+            {{ unreadCount > 9 ? '9+' : unreadCount }}
+          </span>
+        }
+      </a>
+
+      <div class="flex items-center gap-2 pl-2 border-l border-stone-200 ml-1">
+        <div class="w-8 h-8 bg-amber-800 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+          {{ userInitials }}
+        </div>
+        <div class="hidden md:block">
+          <p class="text-xs font-medium text-stone-800 leading-tight">{{ userName }}</p>
+          <p class="text-[10px] text-stone-500 leading-tight">{{ userRole }}</p>
+        </div>
+        <button (click)="logoutClick.emit()"
+                class="hidden md:flex items-center gap-1 text-xs text-stone-400 hover:text-red-500 transition-colors ml-2">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</header>

@@ -1,92 +1,67 @@
-import { Component, OnInit } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Property, PropertyFilters } from '../../models/property.model';
-import { PropertyService } from '../../services/property';
-import { FilterBarComponent } from './filter-bar/filter-bar';
+import { RouterLink } from '@angular/router';
+import { NavbarComponent } from '../../shared/navbar/navbar';
+import { PropertyService, Property, PropertyFilters } from '../../services/property.service';
 import { PropertyCardComponent } from './property-card/property-card';
-
-// ============================================================
-// COMPOSANT : ListingsComponent  —  route: /listings
-// ============================================================
-// Page principale de recherche de logements pour le locataire.
-// Charge la liste des propriétés via PropertyService,
-// applique les filtres et affiche les résultats en grille.
-//
-// Flux de données :
-//   API → PropertyService.getProperties(filters)
-//       → this.properties (affiché via PropertyCardComponent)
-//
-// ⚠️ INTÉGRATION API :
-//   Aucun changement à faire ici. Tout se passe dans :
-//   → property.service.ts  (activer le bloc "API RÉELLE")
-//   → property.model.ts    (adapter les noms de champs)
-// ============================================================
+import { FilterBarComponent } from './filter-bar/filter-bar';
+import { LucideAngularModule, WifiOff, RefreshCw, Home } from 'lucide-angular';
 
 @Component({
   selector: 'app-listings',
   standalone: true,
-  imports: [RouterLink, CommonModule, FilterBarComponent, PropertyCardComponent],
+  imports: [CommonModule, NavbarComponent, PropertyCardComponent, FilterBarComponent, LucideAngularModule],
   templateUrl: './listings.html',
+  changeDetection: ChangeDetectionStrategy.Default,
 })
 export class ListingsComponent implements OnInit {
 
-  // Liste des propriétés affichées
-  properties: Property[] = [];
+  readonly OfflineIcon = WifiOff;
+  readonly RetryIcon   = RefreshCw;
+  readonly HomeIcon    = Home;
 
-  // État de chargement (affiche le skeleton loader)
-  isLoading = true;
-
-  // Message d'erreur si l'API échoue
-  // ⚠️ API: intercepter les erreurs HTTP ici
-  errorMessage = '';
-
-  // Filtres actifs (transmis par FilterBarComponent)
+  properties:     Property[] = [];
+  isLoading       = true;
+  errorMessage    = '';
   currentFilters: PropertyFilters = {};
-
-  // Mode d'affichage : grille ou liste
   viewMode: 'grid' | 'list' = 'grid';
 
-  constructor(private propertyService: PropertyService) {}
+  constructor(
+    public propertyService: PropertyService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
-    // Chargement initial sans filtre → toutes les propriétés
     this.loadProperties();
   }
 
-  // ----------------------------------------------------------
-  // Charger les propriétés (avec ou sans filtres)
-  // ----------------------------------------------------------
   loadProperties(filters?: PropertyFilters) {
-    this.isLoading = true;
+    this.isLoading    = true;
     this.errorMessage = '';
+    this.cdr.detectChanges();
 
-    // ⚠️ API: PropertyService.getProperties() appellera l'API réelle
-    //         une fois le bloc "API RÉELLE" décommenté dans le service
     this.propertyService.getProperties(filters).subscribe({
-      next: (data) => {
-        this.properties = data;
-        this.isLoading = false;
+      next: (data: any) => {
+        this.properties = Array.isArray(data) ? data : (data?.results ?? []);
+        this.isLoading  = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
-        // ⚠️ API: adapter le message selon les codes d'erreur HTTP
-        //         ex: 401 → rediriger vers login
-        //             503 → "Serveur temporairement indisponible"
-        console.error('Erreur chargement propriétés:', err);
-        this.errorMessage = 'Impossible de charger les annonces. Veuillez réessayer.';
-        this.isLoading = false;
+        this.isLoading    = false;
+        this.errorMessage = err.status === 0
+          ? 'Serveur inaccessible. Vérifiez votre connexion.'
+          : err.status === 503
+            ? 'Service temporairement indisponible.'
+            : 'Impossible de charger les annonces.';
+        this.cdr.detectChanges();
       }
     });
   }
 
-  // ----------------------------------------------------------
-  // Récepteur des changements de filtres (depuis FilterBarComponent)
-  // ----------------------------------------------------------
   onFiltersChange(filters: PropertyFilters) {
     this.currentFilters = filters;
     this.loadProperties(filters);
   }
 
-  // Tableau de squelettes pour le skeleton loader (6 cartes)
   get skeletons() { return Array(6); }
 }

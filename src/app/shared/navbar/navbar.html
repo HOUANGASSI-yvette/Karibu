@@ -1,0 +1,119 @@
+<nav class="bg-white border-b border-stone-200 px-4 lg:px-8 py-4 sticky top-0 z-30">
+  <div class="max-w-screen-xl mx-auto flex items-center justify-between">
+
+    <!-- Logo -->
+    <a routerLink="/" class="flex items-center gap-2 group">
+      <div class="w-9 h-9 bg-amber-800 flex items-center justify-center text-white font-bold text-sm group-hover:bg-amber-700 transition-colors">
+        KA
+      </div>
+      <span class="text-lg font-semibold text-stone-800 tracking-wide">KARIBU</span>
+    </a>
+
+    <!-- Centre — titre page (mode dashboard) -->
+    @if (variant === 'dashboard' && pageTitle) {
+      <div class="hidden md:flex items-center gap-2 text-sm text-stone-500">
+        <div class="w-1 h-4 bg-amber-800"></div>
+        <span class="font-medium text-stone-700">{{ pageTitle }}</span>
+      </div>
+    }
+
+    <!-- Centre — liens (mode public) -->
+    @if (variant === 'public') {
+      <div class="hidden md:flex items-center gap-8">
+        <a href="#how"     class="text-stone-600 hover:text-amber-800 transition-colors text-sm">Comment ça marche</a>
+        <a href="#owners"  class="text-stone-600 hover:text-amber-800 transition-colors text-sm">Propriétaires</a>
+        <a href="#tenants" class="text-stone-600 hover:text-amber-800 transition-colors text-sm">Locataires</a>
+        <a routerLink="/listings" class="text-stone-600 hover:text-amber-800 transition-colors text-sm">Annonces</a>
+      </div>
+    }
+
+    <!-- Droite -->
+    <div class="flex items-center gap-3">
+
+      @if (authService.isLoggedIn()) {
+
+        <!-- Notifications -->
+        <a routerLink="/notifications"
+           class="relative w-9 h-9 border border-stone-200 bg-stone-50 flex items-center justify-center hover:border-amber-400 transition-colors">
+          <lucide-icon [img]="BellIcon" class="w-4 h-4 text-stone-600"></lucide-icon>
+        </a>
+
+        <!-- Messages -->
+        <a routerLink="/messages"
+           class="relative w-9 h-9 border border-stone-200 bg-stone-50 flex items-center justify-center hover:border-amber-400 transition-colors">
+          <lucide-icon [img]="MessageIcon" class="w-4 h-4 text-stone-600"></lucide-icon>
+        </a>
+
+        <!-- Avatar + nom -->
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 bg-amber-800 flex items-center justify-center text-white font-bold text-sm">
+            {{ userInitials }}
+          </div>
+          <div class="hidden sm:block">
+            <div class="text-sm font-medium text-stone-800">{{ userName }}</div>
+            <div class="text-xs text-stone-500">{{ userRole }}</div>
+          </div>
+        </div>
+
+        <!-- Dashboard -->
+        @if (variant === 'public') {
+          <a routerLink="/dashboard"
+             class="hidden sm:block px-4 py-2 text-xs border border-stone-200 text-stone-600 hover:border-amber-400 hover:text-amber-800 transition-colors">
+            Mon espace
+          </a>
+        }
+
+        <!-- Déconnexion -->
+        <button (click)="logout()"
+                class="hidden sm:flex items-center gap-1.5 text-xs text-stone-500 hover:text-red-600 transition-colors border border-stone-200 px-3 py-1.5 hover:border-red-300">
+          <lucide-icon [img]="LogOutIcon" class="w-3 h-3"></lucide-icon>
+          Déconnexion
+        </button>
+
+      } @else {
+
+        <!-- Pas connecté -->
+        <a routerLink="/login"
+           class="px-4 py-2 text-stone-600 hover:text-amber-800 transition-colors text-sm">
+          Se connecter
+        </a>
+        <a routerLink="/register"
+           class="px-5 py-2.5 bg-amber-800 text-white hover:bg-amber-700 transition-colors font-medium text-sm">
+          S'inscrire
+        </a>
+
+      }
+
+      <!-- Menu mobile -->
+      <button (click)="toggleMobileMenu()"
+              class="md:hidden w-9 h-9 border border-stone-200 flex items-center justify-center hover:border-amber-400 transition-colors">
+        <lucide-icon [img]="mobileMenuOpen ? XIcon : MenuIcon" class="w-4 h-4 text-stone-600"></lucide-icon>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Menu mobile déroulant -->
+  @if (mobileMenuOpen) {
+    <div class="md:hidden border-t border-stone-100 pt-4 pb-2 mt-4 space-y-1">
+      @if (variant === 'public') {
+        <a href="#how"     class="block px-4 py-2 text-sm text-stone-600 hover:bg-stone-50">Comment ça marche</a>
+        <a href="#owners"  class="block px-4 py-2 text-sm text-stone-600 hover:bg-stone-50">Propriétaires</a>
+        <a href="#tenants" class="block px-4 py-2 text-sm text-stone-600 hover:bg-stone-50">Locataires</a>
+        <a routerLink="/listings" class="block px-4 py-2 text-sm text-stone-600 hover:bg-stone-50">Annonces</a>
+      }
+      @if (authService.isLoggedIn()) {
+        <a routerLink="/messages"      class="block px-4 py-2 text-sm text-stone-600 hover:bg-stone-50">Messages</a>
+        <a routerLink="/notifications" class="block px-4 py-2 text-sm text-stone-600 hover:bg-stone-50">Notifications</a>
+        <a routerLink="/dashboard"     class="block px-4 py-2 text-sm text-stone-600 hover:bg-stone-50">Mon espace</a>
+        <button (click)="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+          Déconnexion
+        </button>
+      } @else {
+        <a routerLink="/login"    class="block px-4 py-2 text-sm text-stone-600 hover:bg-stone-50">Se connecter</a>
+        <a routerLink="/register" class="block px-4 py-2 text-sm text-amber-800 font-medium hover:bg-amber-50">S'inscrire</a>
+      }
+    </div>
+  }
+
+</nav>

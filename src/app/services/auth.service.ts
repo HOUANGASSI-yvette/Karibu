@@ -1,17 +1,17 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
-
+import { Router } from '@angular/router'
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private apiUrl = 'http://localhost:8000/api/auth';
-  
+
   // Using Angular 16+ signals for reactive user state
   public currentUser = signal<any>(null);
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, private router: Router) {
     this.loadUserFromStorage();
   }
 
@@ -69,6 +69,22 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     return !!this.getAccessToken();
+  }
+
+  redirectByRole(user: any) {
+    const role = user?.role;
+    if (role === 'proprietaire') {
+      this.router.navigate(['/dashboard']);
+    } else if (role === 'locataire') {
+      this.router.navigate(['/listings']);
+    } else if (role === 'admin') {
+      this.router.navigate(['/admin']);
+    } else {
+      this.router.navigate(['/']);
+    }
+  }
+  getCurrentUser(): any {
+    return this.currentUser() || JSON.parse(localStorage.getItem('user') || 'null');
   }
 
   private loadUserFromStorage() {
