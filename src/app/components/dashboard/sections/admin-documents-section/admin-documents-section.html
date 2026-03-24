@@ -1,0 +1,98 @@
+<div class="mb-6">
+  <h1 class="text-2xl font-light text-stone-900">Documents soumis</h1>
+  <p class="text-stone-500 text-sm mt-1">Vérifiez et traitez les documents des propriétaires</p>
+</div>
+
+<!-- Filtres -->
+<div class="flex gap-2 mb-6 flex-wrap">
+  @for (f of [{v:'',l:'Tous'},{v:'en_attente',l:'En attente'},{v:'valide',l:'Validés'},{v:'rejete',l:'Rejetés'}]; track f.v) {
+    <button (click)="setFilter(f.v)"
+            [class]="filterStatut() === f.v
+        ? 'px-4 py-2 text-sm bg-amber-800 text-white font-medium'
+        : 'px-4 py-2 text-sm border border-stone-200 text-stone-600 hover:border-amber-400 transition-colors'">
+      {{ f.l }}
+    </button>
+  }
+</div>
+
+@if (isLoading()) {
+  <div class="space-y-3 animate-pulse">
+    @for (i of [1,2,3]; track i) {
+      <div class="h-32 bg-white border border-stone-200"></div>
+    }
+  </div>
+} @else {
+  <div class="space-y-4">
+    @for (doc of documents(); track doc.id) {
+      <div class="bg-white border border-stone-200">
+        <div class="p-5">
+          <div class="flex flex-wrap gap-4 items-start">
+
+            <!-- Aperçu du document -->
+            <div class="w-16 h-20 border border-stone-200 flex-shrink-0 overflow-hidden bg-stone-100 flex items-center justify-center">
+              @if (doc.fichier_type === 'application/pdf') {
+                <svg class="w-8 h-8 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+                  <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              } @else {
+                <img [src]="getImageSrc(doc)" class="w-full h-full object-cover" [alt]="doc.type_document">
+              }
+            </div>
+
+            <!-- Infos -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-3 flex-wrap mb-1">
+                <h3 class="font-medium text-stone-900">{{ doc.proprietaire_username }}</h3>
+                <span [class]="doc.statut === 'en_attente'
+                    ? 'text-xs px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200'
+                    : doc.statut === 'valide'
+                      ? 'text-xs px-2 py-0.5 bg-green-50 text-green-700 border border-green-200'
+                      : 'text-xs px-2 py-0.5 bg-red-50 text-red-700 border border-red-200'">
+                  {{ doc.statut === 'en_attente' ? 'En attente' : doc.statut === 'valide' ? 'Validé' : 'Rejeté' }}
+                </span>
+              </div>
+              <p class="text-sm text-amber-700 font-medium">{{ doc.type_document }}</p>
+              <p class="text-xs text-stone-400 mt-1">Soumis le {{ doc.date_soumission | date:'dd/MM/yyyy à HH:mm' }}</p>
+              @if (doc.commentaire_admin) {
+                <p class="text-xs text-red-600 mt-1 italic">Note admin : {{ doc.commentaire_admin }}</p>
+              }
+
+              <!-- Bouton voir le fichier -->
+              @if (doc.fichier_base64) {
+                <a [href]="getImageSrc(doc)" target="_blank"
+                   class="inline-block mt-2 text-xs text-amber-800 hover:underline">
+                  Voir le document →
+                </a>
+              }
+            </div>
+          </div>
+
+          <!-- Actions si en_attente -->
+          @if (doc.statut === 'en_attente') {
+            <div class="mt-4 pt-4 border-t border-stone-100">
+              <textarea [(ngModel)]="commentaire[doc.id]"
+                        placeholder="Commentaire (optionnel, requis si rejet)"
+                        class="w-full border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-700 resize-none focus:outline-none focus:border-amber-400 mb-3"
+                        rows="2"></textarea>
+              <div class="flex gap-3">
+                <button (click)="traiter(doc.id, 'valide')"
+                        [disabled]="actionLoading() === doc.id"
+                        class="flex-1 py-2.5 bg-amber-800 text-white text-sm font-medium hover:bg-amber-700 disabled:opacity-60 transition-colors">
+                  @if (actionLoading() === doc.id) { Traitement… } @else { Valider }
+                </button>
+                <button (click)="traiter(doc.id, 'rejete')"
+                        [disabled]="actionLoading() === doc.id"
+                        class="flex-1 py-2.5 border border-stone-200 text-stone-600 text-sm hover:border-red-300 hover:text-red-600 disabled:opacity-60 transition-colors">
+                  Rejeter
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+    @empty {
+      <div class="text-center py-12 text-stone-400 text-sm">Aucun document trouvé.</div>
+    }
+  </div>
+}

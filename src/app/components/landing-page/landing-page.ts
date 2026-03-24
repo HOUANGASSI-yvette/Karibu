@@ -19,6 +19,6 @@ export class LandingPage {
 
   logout() {
     this.authService.clearTokens();
-    this.router.navigate(['/login']);
+    this.router.navigate(['/login']).then(r => (""));
   }
 }

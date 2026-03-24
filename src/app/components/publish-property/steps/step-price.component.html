@@ -1,0 +1,73 @@
+<div class="p-6 sm:p-8">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-6 h-6 bg-amber-800 flex items-center justify-center text-white text-xs font-bold">4</div>
+    <h2 class="text-lg font-medium text-stone-900">Prix & disponibilité</h2>
+  </div>
+
+  <div class="space-y-6">
+
+    <!-- Loyer -->
+    <div>
+      <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+        Loyer mensuel (CFA) <span class="text-red-500">*</span>
+      </label>
+      <div class="relative">
+        <input type="number" [(ngModel)]="form.price" name="price"
+          min="1000" placeholder="85000"
+          class="w-full border border-stone-200 bg-stone-50 px-4 py-3 pr-16 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all">
+        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-medium">CFA</span>
+      </div>
+      @if (form.price > 0) {
+        <p class="text-sm text-amber-800 font-medium mt-1.5">{{ formatPrice(form.price) }} CFA / mois</p>
+      }
+    </div>
+
+    <!-- Charges comprises -->
+    <div class="flex items-center gap-3 cursor-pointer" (click)="form.chargesIncluded = !form.chargesIncluded">
+      <div [class]="form.chargesIncluded
+        ? 'w-5 h-5 bg-amber-800 border border-amber-800 flex items-center justify-center shrink-0'
+        : 'w-5 h-5 border border-stone-300 shrink-0 hover:border-amber-400 transition-colors'">
+        @if (form.chargesIncluded) {
+          <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 12 12"><path d="M1 6l3.5 3.5L11 2"/></svg>
+        }
+      </div>
+      <div>
+        <span class="text-sm font-medium text-stone-700">Charges comprises</span>
+        <p class="text-xs text-stone-500">Cochez si le loyer inclut eau, électricité, entretien…</p>
+      </div>
+    </div>
+
+    <!-- Disponibilité -->
+    <div>
+      <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-3">Disponibilité</label>
+      <div class="space-y-2">
+
+        <div class="flex items-center gap-3 p-3 border transition-colors cursor-pointer"
+             [class]="form.available ? 'border-amber-800 bg-amber-50' : 'border-stone-200 hover:border-amber-300'"
+             (click)="form.available = true">
+          <div [class]="form.available ? 'w-4 h-4 border-4 border-amber-800 bg-white shrink-0' : 'w-4 h-4 border border-stone-300 shrink-0'"></div>
+          <div>
+            <p class="text-sm font-medium text-stone-800">Disponible immédiatement</p>
+            <p class="text-xs text-stone-500">Le bien peut être loué dès maintenant.</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3 p-3 border transition-colors cursor-pointer"
+             [class]="!form.available ? 'border-amber-800 bg-amber-50' : 'border-stone-200 hover:border-amber-300'"
+             (click)="form.available = false">
+          <div [class]="!form.available ? 'w-4 h-4 border-4 border-amber-800 bg-white shrink-0 mt-0.5' : 'w-4 h-4 border border-stone-300 shrink-0 mt-0.5'"></div>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-stone-800">Disponible à partir d'une date</p>
+            @if (!form.available) {
+              <input type="date" [(ngModel)]="form.availableFrom" name="availableFrom"
+                (click)="$event.stopPropagation()"
+                class="mt-2 w-full border border-stone-200 bg-white px-3 py-2 text-sm focus:outline-none focus:border-amber-400 transition-colors">
+            }
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

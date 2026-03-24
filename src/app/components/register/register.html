@@ -24,7 +24,11 @@
               <div [class]="currentStep >= step.num
                 ? 'w-7 h-7 bg-amber-800 flex items-center justify-center text-white text-xs font-bold transition-all duration-300'
                 : 'w-7 h-7 border border-stone-300 flex items-center justify-center text-stone-400 text-xs font-bold transition-all duration-300'">
-                {{ currentStep > step.num ? '✓' : step.num }}
+                @if (currentStep > step.num) {
+                  <lucide-icon [img]="Check" [size]="12" class="text-white"></lucide-icon>
+                } @else {
+                  {{ step.num }}
+                }
               </div>
               <span [class]="currentStep >= step.num
                 ? 'text-xs font-medium text-stone-700 hidden sm:block'
@@ -72,13 +76,15 @@
                 [class]="selectedRole === 'tenant'
                   ? 'border-2 border-amber-800 bg-amber-50 p-6 text-left transition-all duration-200 hover:shadow-md'
                   : 'border border-stone-200 bg-white p-6 text-left hover:border-amber-400 hover:bg-stone-50 transition-all duration-200 hover:shadow-md'">
-                <div class="text-3xl mb-4">🔑</div>
+                <div class="w-10 h-10 bg-amber-100 flex items-center justify-center mb-4">
+                  <lucide-icon [img]="KeyRound" [size]="20" class="text-amber-800"></lucide-icon>
+                </div>
                 <div class="font-semibold text-stone-900 text-base mb-1">Je cherche à louer</div>
                 <div class="text-sm text-stone-500 leading-relaxed">Parcourez des annonces et gérez votre location facilement.</div>
                 @if (selectedRole === 'tenant') {
                   <div class="mt-4 flex items-center gap-1.5">
                     <div class="w-4 h-4 bg-amber-800 flex items-center justify-center">
-                      <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 12 12" stroke-width="2.5"><path d="M1 6l3 3 7-6"/></svg>
+                      <lucide-icon [img]="Check" [size]="10" class="text-white"></lucide-icon>
                     </div>
                     <span class="text-xs font-medium text-amber-800">Sélectionné</span>
                   </div>
@@ -92,13 +98,15 @@
                 [class]="selectedRole === 'owner'
                   ? 'border-2 border-amber-800 bg-amber-50 p-6 text-left transition-all duration-200 hover:shadow-md'
                   : 'border border-stone-200 bg-white p-6 text-left hover:border-amber-400 hover:bg-stone-50 transition-all duration-200 hover:shadow-md'">
-                <div class="text-3xl mb-4">🏠</div>
+                <div class="w-10 h-10 bg-amber-100 flex items-center justify-center mb-4">
+                  <lucide-icon [img]="Home" [size]="20" class="text-amber-800"></lucide-icon>
+                </div>
                 <div class="font-semibold text-stone-900 text-base mb-1">Je mets en location</div>
                 <div class="text-sm text-stone-500 leading-relaxed">Publiez vos biens et gérez vos locataires depuis un tableau de bord.</div>
                 @if (selectedRole === 'owner') {
                   <div class="mt-4 flex items-center gap-1.5">
                     <div class="w-4 h-4 bg-amber-800 flex items-center justify-center">
-                      <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 12 12" stroke-width="2.5"><path d="M1 6l3 3 7-6"/></svg>
+                      <lucide-icon [img]="Check" [size]="10" class="text-white"></lucide-icon>
                     </div>
                     <span class="text-xs font-medium text-amber-800">Sélectionné</span>
                   </div>
@@ -114,7 +122,7 @@
                 <ul class="space-y-2">
                   @for (benefit of getRoleBenefits(); track benefit) {
                     <li class="flex items-start gap-2 text-sm text-stone-600">
-                      <div class="w-1.5 h-1.5 bg-amber-800 mt-1.5 flex-shrink-0"></div>
+                      <lucide-icon [img]="CheckCircle" [size]="14" class="text-amber-800 mt-0.5 flex-shrink-0"></lucide-icon>
                       {{ benefit }}
                     </li>
                   }
@@ -125,8 +133,9 @@
             <button
               (click)="nextStep()"
               [disabled]="!selectedRole"
-              class="w-full mt-6 py-3.5 bg-amber-800 text-white font-medium text-sm hover:bg-amber-700 transition-all duration-200 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed">
-              Continuer →
+              class="w-full mt-6 py-3.5 bg-amber-800 text-white font-medium text-sm hover:bg-amber-700 transition-all duration-200 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              <span>Continuer</span>
+              <lucide-icon [img]="ArrowRight" [size]="15"></lucide-icon>
             </button>
           </div>
         }
@@ -139,36 +148,45 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">Prénom</label>
-                <input
-                  type="text"
-                  [(ngModel)]="registerData.firstName"
-                  name="firstName"
-                  placeholder="Kofi"
-                  class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200"
-                  required>
+                <div class="relative">
+                  <lucide-icon [img]="User" [size]="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"></lucide-icon>
+                  <input
+                    type="text"
+                    [(ngModel)]="registerData.firstName"
+                    name="firstName"
+                    placeholder="Kofi"
+                    class="w-full border border-stone-200 bg-stone-50 pl-10 pr-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200"
+                    required>
+                </div>
               </div>
               <div>
                 <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">Nom</label>
-                <input
-                  type="text"
-                  [(ngModel)]="registerData.lastName"
-                  name="lastName"
-                  placeholder="Mensah"
-                  class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200"
-                  required>
+                <div class="relative">
+                  <lucide-icon [img]="User" [size]="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"></lucide-icon>
+                  <input
+                    type="text"
+                    [(ngModel)]="registerData.lastName"
+                    name="lastName"
+                    placeholder="Mensah"
+                    class="w-full border border-stone-200 bg-stone-50 pl-10 pr-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200"
+                    required>
+                </div>
               </div>
             </div>
 
             <!-- Email -->
             <div>
               <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">Adresse e-mail</label>
-              <input
-                type="email"
-                [(ngModel)]="registerData.email"
-                name="email"
-                placeholder="kofi.mensah@exemple.com"
-                class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200"
-                required>
+              <div class="relative">
+                <lucide-icon [img]="Mail" [size]="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"></lucide-icon>
+                <input
+                  type="email"
+                  [(ngModel)]="registerData.email"
+                  name="email"
+                  placeholder="kofi.mensah@exemple.com"
+                  class="w-full border border-stone-200 bg-stone-50 pl-10 pr-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200"
+                  required>
+              </div>
             </div>
 
             <!-- Phone -->
@@ -176,7 +194,8 @@
               <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">Téléphone</label>
               <div class="flex">
                 <div class="border border-r-0 border-stone-200 bg-stone-100 px-3 py-3 text-sm text-stone-600 flex items-center gap-1.5 flex-shrink-0">
-                  🇹🇬 +228
+                  <lucide-icon [img]="Phone" [size]="13" class="text-stone-500"></lucide-icon>
+                  <span>+228</span>
                 </div>
                 <input
                   type="tel"
@@ -191,19 +210,19 @@
             <div>
               <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">Mot de passe</label>
               <div class="relative">
+                <lucide-icon [img]="Lock" [size]="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"></lucide-icon>
                 <input
                   [type]="showPassword ? 'text' : 'password'"
                   [(ngModel)]="registerData.password"
                   name="password"
                   placeholder="Minimum 8 caractères"
                   (input)="updatePasswordStrength()"
-                  class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 pr-12"
+                  class="w-full border border-stone-200 bg-stone-50 pl-10 pr-12 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200"
                   required>
-                <button type="button" (click)="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xs font-medium">
-                  {{ showPassword ? 'CACHER' : 'VOIR' }}
+                <button type="button" (click)="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 transition-colors">
+                  <lucide-icon [img]="showPassword ? EyeOff : Eye" [size]="16"></lucide-icon>
                 </button>
               </div>
-              <!-- Strength bar -->
               @if (registerData.password) {
                 <div class="mt-2 flex gap-1">
                   @for (bar of [1,2,3,4]; track bar) {
@@ -217,31 +236,41 @@
             <!-- Confirm password -->
             <div>
               <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">Confirmer le mot de passe</label>
-              <input
-                type="password"
-                [(ngModel)]="registerData.confirmPassword"
-                name="confirmPassword"
-                placeholder="••••••••"
-                class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200"
-                required>
+              <div class="relative">
+                <lucide-icon [img]="Lock" [size]="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"></lucide-icon>
+                <input
+                  type="password"
+                  [(ngModel)]="registerData.confirmPassword"
+                  name="confirmPassword"
+                  placeholder="••••••••"
+                  class="w-full border border-stone-200 bg-stone-50 pl-10 pr-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200"
+                  required>
+              </div>
               @if (registerData.confirmPassword && registerData.password !== registerData.confirmPassword) {
-                <p class="text-xs text-red-600 mt-1">Les mots de passe ne correspondent pas.</p>
+                <p class="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                  <lucide-icon [img]="AlertCircle" [size]="12"></lucide-icon>
+                  Les mots de passe ne correspondent pas.
+                </p>
               }
             </div>
 
             <!-- Error -->
             @if (errorMessage) {
-              <div class="bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2">
-                <div class="w-4 h-4 bg-red-500 flex-shrink-0 flex items-center justify-center">
-                  <span class="text-white text-xs font-bold">!</span>
-                </div>
+              <div class="bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-2.5">
+                <lucide-icon [img]="AlertCircle" [size]="16" class="text-red-500 flex-shrink-0 mt-0.5"></lucide-icon>
                 <p class="text-sm text-red-700">{{ errorMessage }}</p>
               </div>
             }
 
             <div class="flex gap-3 pt-2">
-              <button type="button" (click)="prevStep()" class="px-6 py-3.5 border border-stone-200 text-stone-600 text-sm hover:bg-stone-50 hover:border-amber-300 transition-all duration-200">← Retour</button>
-              <button type="submit" class="flex-1 py-3.5 bg-amber-800 text-white font-medium text-sm hover:bg-amber-700 transition-all duration-200 hover:shadow-md">Continuer →</button>
+              <button type="button" (click)="prevStep()" class="px-6 py-3.5 border border-stone-200 text-stone-600 text-sm hover:bg-stone-50 hover:border-amber-300 transition-all duration-200 flex items-center gap-2">
+                <lucide-icon [img]="ArrowLeft" [size]="14"></lucide-icon>
+                Retour
+              </button>
+              <button type="submit" class="flex-1 py-3.5 bg-amber-800 text-white font-medium text-sm hover:bg-amber-700 transition-all duration-200 hover:shadow-md flex items-center justify-center gap-2">
+                <span>Continuer</span>
+                <lucide-icon [img]="ArrowRight" [size]="14"></lucide-icon>
+              </button>
             </div>
 
           </form>
@@ -254,30 +283,36 @@
             <!-- City -->
             <div>
               <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">Ville</label>
-              <select
-                [(ngModel)]="registerData.city"
-                name="city"
-                class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 appearance-none">
-                <option value="" disabled selected>Sélectionnez votre ville</option>
-                @for (city of cities; track city) {
-                  <option [value]="city">{{ city }}</option>
-                }
-              </select>
+              <div class="relative">
+                <lucide-icon [img]="MapPin" [size]="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"></lucide-icon>
+                <select
+                  [(ngModel)]="registerData.city"
+                  name="city"
+                  class="w-full border border-stone-200 bg-stone-50 pl-10 pr-4 py-3 text-stone-900 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 appearance-none">
+                  <option value="" disabled selected>Sélectionnez votre ville</option>
+                  @for (city of cities; track city) {
+                    <option [value]="city">{{ city }}</option>
+                  }
+                </select>
+              </div>
             </div>
 
-            <!-- Conditional fields -->
+            <!-- Tenant fields -->
             @if (selectedRole === 'tenant') {
               <div>
                 <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">Budget mensuel (CFA)</label>
-                <select
-                  [(ngModel)]="registerData.budget"
-                  name="budget"
-                  class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 appearance-none">
-                  <option value="" disabled selected>Votre budget maximum</option>
-                  @for (b of budgets; track b.value) {
-                    <option [value]="b.value">{{ b.label }}</option>
-                  }
-                </select>
+                <div class="relative">
+                  <lucide-icon [img]="Wallet" [size]="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"></lucide-icon>
+                  <select
+                    [(ngModel)]="registerData.budget"
+                    name="budget"
+                    class="w-full border border-stone-200 bg-stone-50 pl-10 pr-4 py-3 text-stone-900 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 appearance-none">
+                    <option value="" disabled selected>Votre budget maximum</option>
+                    @for (b of budgets; track b.value) {
+                      <option [value]="b.value">{{ b.label }}</option>
+                    }
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -297,19 +332,23 @@
               </div>
             }
 
+            <!-- Owner fields -->
             @if (selectedRole === 'owner') {
               <div>
                 <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">Nombre de biens à gérer</label>
-                <select
-                  [(ngModel)]="registerData.propertyCount"
-                  name="propertyCount"
-                  class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 appearance-none">
-                  <option value="" disabled selected>Sélectionnez</option>
-                  <option value="1">1 bien</option>
-                  <option value="2-5">2 à 5 biens</option>
-                  <option value="6-10">6 à 10 biens</option>
-                  <option value="10+">Plus de 10 biens</option>
-                </select>
+                <div class="relative">
+                  <lucide-icon [img]="Building2" [size]="14" class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none"></lucide-icon>
+                  <select
+                    [(ngModel)]="registerData.propertyCount"
+                    name="propertyCount"
+                    class="w-full border border-stone-200 bg-stone-50 pl-9 pr-4 py-3 text-stone-900 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200 appearance-none">
+                    <option value="" disabled selected>Sélectionnez</option>
+                    <option value="1">1 bien</option>
+                    <option value="2-5">2 à 5 biens</option>
+                    <option value="6-10">6 à 10 biens</option>
+                    <option value="10+">Plus de 10 biens</option>
+                  </select>
+                </div>
               </div>
             }
 
@@ -321,26 +360,38 @@
                   ? 'w-4 h-4 bg-amber-800 border border-amber-800 flex items-center justify-center cursor-pointer flex-shrink-0 mt-0.5'
                   : 'w-4 h-4 border border-stone-300 cursor-pointer flex-shrink-0 mt-0.5 hover:border-amber-400 transition-colors'">
                 @if (acceptedTerms) {
-                  <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 12 12"><path d="M1 6l3.5 3.5L11 2"/></svg>
+                  <lucide-icon [img]="Check" [size]="10" class="text-white"></lucide-icon>
                 }
               </div>
               <span class="text-sm text-stone-500 leading-relaxed">
-                J'accepte les <a href="#" class="text-amber-800 hover:underline">Conditions générales d'utilisation</a> et la <a href="#" class="text-amber-800 hover:underline">Politique de confidentialité</a> d'KARIBU.
+                J'accepte les <a href="#" class="text-amber-800 hover:underline">Conditions générales d'utilisation</a> et la <a href="#" class="text-amber-800 hover:underline">Politique de confidentialité</a> de KARIBU.
               </span>
             </div>
 
+            <!-- Error -->
+            @if (errorMessage) {
+              <div class="bg-red-50 border border-red-200 px-4 py-3 flex items-start gap-2.5">
+                <lucide-icon [img]="AlertCircle" [size]="16" class="text-red-500 flex-shrink-0 mt-0.5"></lucide-icon>
+                <p class="text-sm text-red-700">{{ errorMessage }}</p>
+              </div>
+            }
+
             <!-- Submit -->
             <div class="flex gap-3 pt-2">
-              <button type="button" (click)="prevStep()" class="px-6 py-3.5 border border-stone-200 text-stone-600 text-sm hover:bg-stone-50 hover:border-amber-300 transition-all duration-200">← Retour</button>
+              <button type="button" (click)="prevStep()" class="px-6 py-3.5 border border-stone-200 text-stone-600 text-sm hover:bg-stone-50 hover:border-amber-300 transition-all duration-200 flex items-center gap-2">
+                <lucide-icon [img]="ArrowLeft" [size]="14"></lucide-icon>
+                Retour
+              </button>
               <button
                 type="submit"
                 [disabled]="isLoading || !acceptedTerms"
                 class="flex-1 py-3.5 bg-amber-800 text-white font-medium text-sm hover:bg-amber-700 transition-all duration-200 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                 @if (isLoading) {
-                  <div class="w-4 h-4 border-2 border-white border-t-transparent animate-spin"></div>
+                  <lucide-icon [img]="LoaderCircle" [size]="16" class="animate-spin"></lucide-icon>
                   <span>Création du compte…</span>
                 } @else {
-                  <span>Créer mon compte gratuit →</span>
+                  <span>Créer mon compte gratuit</span>
+                  <lucide-icon [img]="ArrowRight" [size]="14"></lucide-icon>
                 }
               </button>
             </div>
@@ -352,29 +403,54 @@
         @if (currentStep === 4) {
           <div class="p-10 text-center">
             <div class="w-16 h-16 bg-amber-800 flex items-center justify-center mx-auto mb-6">
-              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+              <lucide-icon [img]="CheckCircle" [size]="32" class="text-white"></lucide-icon>
             </div>
             <h2 class="text-2xl font-light text-stone-900 mb-2">Bienvenue sur <span class="font-semibold">KARIBU</span> !</h2>
-            <p class="text-stone-500 mb-8">Votre compte {{ selectedRole === 'tenant' ? 'locataire' : 'propriétaire' }} a été créé. Consultez votre e-mail pour valider votre adresse.</p>
+            <p class="text-stone-500 mb-1">
+              Votre compte {{ selectedRole === 'tenant' ? 'locataire' : 'propriétaire' }} a été créé avec succès.
+            </p>
+            <p class="text-xs text-amber-800 font-medium mb-8 flex items-center justify-center gap-1.5">
+              <lucide-icon [img]="LoaderCircle" [size]="12" class="animate-spin"></lucide-icon>
+              Redirection vers la connexion dans 3 secondes…
+            </p>
 
             <div class="bg-stone-50 border border-stone-200 p-4 mb-8 text-left">
               <p class="text-xs font-medium text-stone-600 uppercase tracking-wider mb-3">Récapitulatif</p>
               <div class="space-y-2 text-sm text-stone-600">
-                <div class="flex justify-between"><span>Nom</span><span class="font-medium text-stone-900">{{ registerData.firstName }} {{ registerData.lastName }}</span></div>
-                <div class="flex justify-between"><span>Email</span><span class="font-medium text-stone-900">{{ registerData.email }}</span></div>
-                <div class="flex justify-between"><span>Profil</span><span class="font-medium text-stone-900">{{ selectedRole === 'tenant' ? '🔑 Locataire' : '🏠 Propriétaire' }}</span></div>
+                <div class="flex justify-between items-center">
+                  <span class="flex items-center gap-1.5">
+                    <lucide-icon [img]="User" [size]="12" class="text-stone-400"></lucide-icon>
+                    Nom
+                  </span>
+                  <span class="font-medium text-stone-900">{{ registerData.firstName }} {{ registerData.lastName }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="flex items-center gap-1.5">
+                    <lucide-icon [img]="Mail" [size]="12" class="text-stone-400"></lucide-icon>
+                    Email
+                  </span>
+                  <span class="font-medium text-stone-900">{{ registerData.email }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="flex items-center gap-1.5">
+                    <lucide-icon [img]="selectedRole === 'tenant' ? KeyRound : Home" [size]="12" class="text-stone-400"></lucide-icon>
+                    Profil
+                  </span>
+                  <span class="font-medium text-stone-900">{{ selectedRole === 'tenant' ? 'Locataire' : 'Propriétaire' }}</span>
+                </div>
               </div>
             </div>
 
-            <a routerLink="/login" class="block w-full py-3.5 bg-amber-800 text-white font-medium text-sm hover:bg-amber-700 transition-all duration-200 hover:shadow-md text-center">
-              Se connecter maintenant →
+            <a routerLink="/login" class="block w-full py-3.5 bg-amber-800 text-white font-medium text-sm hover:bg-amber-700 transition-all duration-200 hover:shadow-md text-center flex items-center justify-center gap-2">
+              <span>Se connecter maintenant</span>
+              <lucide-icon [img]="ArrowRight" [size]="14"></lucide-icon>
             </a>
           </div>
         }
 
       </div>
 
-      <!-- Google option (steps 2 only) -->
+      <!-- Google option (step 2 only) -->
       @if (currentStep === 2) {
         <div class="mt-5">
           <div class="flex items-center gap-4 mb-4">
@@ -383,7 +459,12 @@
             <div class="flex-1 h-px bg-stone-200"></div>
           </div>
           <button class="w-full py-3 border border-stone-200 bg-white text-stone-700 text-sm hover:bg-stone-50 hover:border-amber-300 transition-all duration-200 flex items-center justify-center gap-2">
-            <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
             S'inscrire avec Google
           </button>
         </div>

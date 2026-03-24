@@ -3,15 +3,35 @@ import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import {
+  LucideAngularModule,
+  Eye, EyeOff, Mail, Lock, Check, ShieldCheck,
+  AlertCircle, LoaderCircle, ArrowRight, ArrowLeft,
+  KeyRound, Home
+} from 'lucide-angular';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [RouterLink, FormsModule, CommonModule],
+  imports: [RouterLink, FormsModule, CommonModule, LucideAngularModule],
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
 export class LoginComponent implements OnInit {
+  // Icônes
+  readonly Eye = Eye;
+  readonly EyeOff = EyeOff;
+  readonly Mail = Mail;
+  readonly Lock = Lock;
+  readonly Check = Check;
+  readonly ShieldCheck = ShieldCheck;
+  readonly AlertCircle = AlertCircle;
+  readonly LoaderCircle = LoaderCircle;
+  readonly ArrowRight = ArrowRight;
+  readonly ArrowLeft = ArrowLeft;
+  readonly KeyRound = KeyRound;
+  readonly Home = Home;
+
   activeRole: 'tenant' | 'owner' = 'tenant';
   showPassword = false;
   rememberMe = false;
@@ -22,10 +42,7 @@ export class LoginComponent implements OnInit {
   mfaToken = '';
   mfaCode = '';
 
-  loginData = {
-    email: '',
-    password: '',
-  };
+  loginData = { email: '', password: '' };
 
   constructor(
     private router: Router,
@@ -40,7 +57,6 @@ export class LoginComponent implements OnInit {
           access: params['access_token'],
           refresh: params['refresh_token']
         });
-        // Récupère le profil depuis le backend pour avoir le vrai rôle
         this.authService.getProfile().subscribe({
           next: (user) => {
             this.authService.currentUser.set(user);
@@ -62,6 +78,13 @@ export class LoginComponent implements OnInit {
     this.showPassword = !this.showPassword;
   }
 
+  cancelMfa() {
+    this.mfaRequired = false;
+    this.mfaToken = '';
+    this.mfaCode = '';
+    this.errorMessage = '';
+  }
+
   onSubmit() {
     this.errorMessage = '';
 
@@ -77,12 +100,11 @@ export class LoginComponent implements OnInit {
 
     this.isLoading = true;
 
-    const payload = {
-      username: this.loginData.email,
+    // On envoie email dans le champ "email" — le backend LoginSerializer utilise email
+    this.authService.login({
+      email: this.loginData.email,
       password: this.loginData.password
-    };
-
-    this.authService.login(payload).subscribe({
+    }).subscribe({
       next: (res) => {
         this.isLoading = false;
         if (res.mfa_required) {
@@ -93,18 +115,15 @@ export class LoginComponent implements OnInit {
         }
       },
       error: (err) => {
-        this.isLoading = false;
-        this.errorMessage =
-          err.error?.detail ||
-          err.error?.non_field_errors?.[0] ||
-          'Identifiants incorrects.';
+        this.isLoading = false;  // ← stop immédiatement
+        this.errorMessage = this.authService.extractError(err);
       }
     });
   }
 
   verifyMfa() {
-    if (!this.mfaCode) {
-      this.errorMessage = 'Veuillez entrer le code Authenticator.';
+    if (!this.mfaCode || this.mfaCode.length < 6) {
+      this.errorMessage = 'Veuillez entrer le code à 6 chiffres.';
       return;
     }
     this.isLoading = true;
@@ -114,27 +133,14 @@ export class LoginComponent implements OnInit {
         this.authService.redirectByRole(res.user);
       },
       error: (err) => {
-        this.isLoading = false;
-        this.errorMessage = err.error?.detail || 'Code invalide ou expiré.';
+        this.isLoading = false;  // ← stop immédiatement
+        this.mfaCode = '';       // reset le champ
+        this.errorMessage = this.authService.extractError(err);
       }
     });
   }
 
   googleLogin() {
-
     window.location.href = 'http://localhost:8000/api/auth/google/';
-  }
-
-
-  private redirectAfterLogin() {
-
-    const returnUrl = this.route.snapshot.queryParams['returnUrl'];
-    if (returnUrl) {
-      this.router.navigateByUrl(returnUrl);
-      return;
-    }
-    // Sinon redirection par rôle
-    const user = this.authService.getCurrentUser();
-    this.authService.redirectByRole(user);
   }
 }

@@ -1,0 +1,107 @@
+<div class="p-6 sm:p-8">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-6 h-6 bg-amber-800 flex items-center justify-center text-white text-xs font-bold">5</div>
+    <h2 class="text-lg font-medium text-stone-900">Vérification avant publication</h2>
+  </div>
+
+  <!-- Photo de couverture -->
+  @if (photos.length > 0) {
+    <div class="relative h-48 mb-6 overflow-hidden border border-stone-200">
+      <img [src]="photos[0].url" [alt]="form.title" class="w-full h-full object-cover">
+      <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
+        <div>
+          <p class="text-white font-semibold text-lg">{{ form.title }}</p>
+          <p class="text-white/80 text-sm">{{ form.district }}, {{ form.city }}</p>
+        </div>
+      </div>
+      <div class="absolute top-3 right-3 bg-amber-800 text-white text-xs px-2 py-1 font-medium">
+        {{ getTypeLabel(form.type) }}
+      </div>
+    </div>
+  }
+
+  <div class="space-y-4">
+
+    <!-- Localisation -->
+    <div class="border border-stone-200">
+      <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-200">
+        <span class="text-xs font-medium text-stone-700 uppercase tracking-wider">Localisation</span>
+        <button type="button" (click)="editStep.emit(1)" class="text-xs text-amber-800 hover:underline">Modifier</button>
+      </div>
+      <div class="px-4 py-3 grid grid-cols-2 gap-y-2 text-sm">
+        <span class="text-stone-500">Type</span>     <span class="text-stone-900 font-medium">{{ getTypeLabel(form.type) }}</span>
+        <span class="text-stone-500">Ville</span>    <span class="text-stone-900 font-medium">{{ form.city }}</span>
+        <span class="text-stone-500">Quartier</span> <span class="text-stone-900 font-medium">{{ form.district }}</span>
+        @if (form.address) {
+          <span class="text-stone-500">Adresse</span> <span class="text-stone-900 font-medium">{{ form.address }}</span>
+        }
+      </div>
+    </div>
+
+    <!-- Caractéristiques -->
+    <div class="border border-stone-200">
+      <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-200">
+        <span class="text-xs font-medium text-stone-700 uppercase tracking-wider">Caractéristiques</span>
+        <button type="button" (click)="editStep.emit(2)" class="text-xs text-amber-800 hover:underline">Modifier</button>
+      </div>
+      <div class="px-4 py-3 grid grid-cols-2 gap-y-2 text-sm">
+        <span class="text-stone-500">Surface</span>  <span class="text-stone-900 font-medium">{{ form.surface }} m²</span>
+        <span class="text-stone-500">Pièces</span>   <span class="text-stone-900 font-medium">{{ form.rooms }}</span>
+        <span class="text-stone-500">Chambres</span> <span class="text-stone-900 font-medium">{{ form.bedrooms }}</span>
+        <span class="text-stone-500">Sdb</span>      <span class="text-stone-900 font-medium">{{ form.bathrooms }}</span>
+      </div>
+      @if (form.amenities.length > 0) {
+        <div class="px-4 pb-3 flex flex-wrap gap-1.5">
+          @for (a of form.amenities; track a) {
+            <span class="text-xs px-2 py-0.5 bg-stone-100 text-stone-600 border border-stone-200">{{ a }}</span>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Photos -->
+    <div class="border border-stone-200">
+      <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-200">
+        <span class="text-xs font-medium text-stone-700 uppercase tracking-wider">Photos ({{ photos.length }})</span>
+        <button type="button" (click)="editStep.emit(3)" class="text-xs text-amber-800 hover:underline">Modifier</button>
+      </div>
+      <div class="px-4 py-3 flex gap-2 overflow-x-auto">
+        @for (photo of photos; track $index) {
+          <div class="relative shrink-0">
+            <img [src]="photo.url" [alt]="photo.name" class="w-16 h-16 object-cover border border-stone-200">
+            @if ($index === 0) {
+              <span class="absolute -bottom-1 left-0 right-0 bg-amber-800 text-white text-xs text-center py-0.5">★</span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Prix -->
+    <div class="border border-stone-200">
+      <div class="flex items-center justify-between px-4 py-3 bg-stone-50 border-b border-stone-200">
+        <span class="text-xs font-medium text-stone-700 uppercase tracking-wider">Prix & disponibilité</span>
+        <button type="button" (click)="editStep.emit(4)" class="text-xs text-amber-800 hover:underline">Modifier</button>
+      </div>
+      <div class="px-4 py-3 grid grid-cols-2 gap-y-2 text-sm">
+        <span class="text-stone-500">Loyer</span>
+        <span class="text-stone-900 font-bold text-amber-800">
+          {{ formatPrice(form.price) }} CFA / mois
+          @if (form.chargesIncluded) { <span class="font-normal text-stone-500 text-xs">(cc)</span> }
+        </span>
+        <span class="text-stone-500">Disponible</span>
+        <span class="text-stone-900 font-medium">
+          {{ form.available ? 'Immédiatement' : 'À partir du ' + form.availableFrom }}
+        </span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Erreur globale -->
+  @if (errorMessage) {
+    <div class="bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2 mt-4">
+      <span class="text-red-600 text-sm">{{ errorMessage }}</span>
+    </div>
+  }
+</div>

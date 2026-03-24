@@ -1,7 +1,8 @@
 import { Component, OnInit, Output, EventEmitter, Input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { PropertyService, PropertyFilters } from '../../../services/property.service';
+import { PropertyService } from '../../../services/property.service';
+import { PropertyFilters } from '../../../models/property.model';
 
 @Component({
   selector: 'app-filter-bar',

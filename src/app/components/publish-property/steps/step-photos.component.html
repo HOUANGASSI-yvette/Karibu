@@ -1,0 +1,89 @@
+<div class="p-6 sm:p-8">
+  <div class="flex items-center gap-3 mb-2">
+    <div class="w-6 h-6 bg-amber-800 flex items-center justify-center text-white text-xs font-bold">3</div>
+    <h2 class="text-lg font-medium text-stone-900">Photos</h2>
+  </div>
+  <p class="text-sm text-stone-500 mb-6 ml-9">
+    Jusqu'à {{ MAX_PHOTOS }} photos · Max {{ MAX_SIZE_MB }} Mo par photo · La première sera la couverture.
+  </p>
+
+  <!-- Zone drag & drop -->
+  <div
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+    (click)="triggerFileInput()"
+    [class]="isDragOver
+      ? 'border-2 border-amber-800 bg-amber-50 cursor-pointer py-10 text-center transition-all mb-5'
+      : 'border-2 border-dashed border-stone-300 hover:border-amber-400 bg-stone-50 hover:bg-amber-50 cursor-pointer py-10 text-center transition-all mb-5'">
+
+    <input id="photo-input" type="file" multiple accept="image/*"
+      (change)="onFileSelect($event)" class="hidden">
+
+    <div class="flex flex-col items-center gap-3">
+      <div class="w-14 h-14 border-2 border-dashed flex items-center justify-center"
+           [class]="isDragOver ? 'border-amber-800 bg-amber-100' : 'border-stone-300 bg-white'">
+        <svg class="w-6 h-6" [class]="isDragOver ? 'text-amber-800' : 'text-stone-400'"
+             fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      @if (isDragOver) {
+        <p class="text-sm font-medium text-amber-800">Déposez les photos ici</p>
+      } @else {
+        <div>
+          <p class="text-sm font-medium text-stone-700">Glissez vos photos ici</p>
+          <p class="text-xs text-stone-500 mt-1">ou <span class="text-amber-800 underline">parcourez vos fichiers</span></p>
+        </div>
+        <p class="text-xs text-stone-400">JPG, PNG, WEBP · {{ photos.length }}/{{ MAX_PHOTOS }} photos</p>
+      }
+    </div>
+  </div>
+
+  <!-- Erreur photo -->
+  @if (photoError) {
+    <div class="bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2 mb-5">
+      <span class="text-red-600 text-xs font-medium">{{ photoError }}</span>
+    </div>
+  }
+
+  <!-- Grille aperçu -->
+  @if (photos.length > 0) {
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      @for (photo of photos; track $index) {
+        <div class="relative group border border-stone-200 hover:border-amber-400 transition-colors overflow-hidden">
+          <div class="h-32 bg-stone-100">
+            <img [src]="photo.url" [alt]="photo.name" class="w-full h-full object-cover">
+          </div>
+          @if ($index === 0) {
+            <div class="absolute top-2 left-2 bg-amber-800 text-white text-xs px-2 py-0.5 font-medium">Couverture</div>
+          }
+          <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+            @if ($index !== 0) {
+              <button type="button" (click)="setCover.emit($index)"
+                class="bg-white text-stone-800 text-xs px-2 py-1 hover:bg-amber-800 hover:text-white transition-colors">
+                Couverture
+              </button>
+            }
+            <button type="button" (click)="removePhoto.emit($index)"
+              class="bg-white text-red-600 text-xs px-2 py-1 hover:bg-red-600 hover:text-white transition-colors">
+              Supprimer
+            </button>
+          </div>
+          <div class="px-2 py-1.5 bg-white border-t border-stone-100">
+            <p class="text-xs text-stone-600 truncate">{{ photo.name }}</p>
+            <p class="text-xs text-stone-400">{{ photo.size }}</p>
+          </div>
+        </div>
+      }
+
+      @if (photos.length < MAX_PHOTOS) {
+        <button type="button" (click)="triggerFileInput()"
+          class="h-32 border-2 border-dashed border-stone-300 hover:border-amber-400 hover:bg-amber-50 flex flex-col items-center justify-center gap-2 text-stone-400 hover:text-amber-800 transition-all">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path d="M12 4v16m8-8H4"/></svg>
+          <span class="text-xs">Ajouter</span>
+        </button>
+      }
+    </div>
+  }
+</div>

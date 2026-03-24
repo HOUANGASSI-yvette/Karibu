@@ -1,102 +1,112 @@
+// services/property.service.ts
 import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { Observable, of, delay } from 'rxjs';
+import {
+  Property,
+  PropertyCreatePayload,
+  PropertyFilters,
+  ReservationRequest,
+} from '../models/property.model';
 import { environment } from '../../environments/environment';
-
-
-export interface Property {
-  id:               number;
-  owner:            number;
-  owner_name:       string;
-  title:            string;
-  description:      string;
-  type:             string;
-  price:            number;
-  charges_included: boolean;
-  city:             string;
-  district:         string;
-  address?:         string;
-  surface:          number;
-  rooms:            number;
-  bedrooms:         number;
-  bathrooms:        number;
-  amenities:        { id: number; name: string }[];
-  photos:           { id: number; url: string; order: number }[];  // ← url pas image
-  cover_photo?:     string;   // ← champ retourné par ton serializer
-  available:        boolean;
-  available_from?:  string;
-  is_active:        boolean;
-  created_at:       string;
-  updated_at:       string;
-}
-export interface PropertyFilters {
-  city?:      string;
-  type?:      string;
-  min_price?: number;
-  max_price?: number;
-  available?: boolean;
-}
 
 @Injectable({ providedIn: 'root' })
 export class PropertyService {
 
   private readonly BASE = `${environment.apiUrl}/properties`;
-  isLoading   = signal(false);
-  isAvailable = signal(true);
+
+  isLoading = signal(false);
 
   constructor(private http: HttpClient) {}
 
-  // GET /api/properties/
+  // ── Liste avec filtres ─────────────────────────────────
+  // Anciennement getProperties() — conservé pour compatibilité
   getProperties(filters?: PropertyFilters): Observable<Property[]> {
-    let params = new HttpParams();
-    if (filters?.city)                    params = params.set('city',      filters.city);
-    if (filters?.type)                    params = params.set('type',      filters.type);
-    if (filters?.min_price)               params = params.set('min_price', filters.min_price);
-    if (filters?.max_price)               params = params.set('max_price', filters.max_price);
-    if (filters?.available !== undefined) params = params.set('available', String(filters.available));
-
-    this.isLoading.set(true);
-    return this.http.get<Property[]>(`${this.BASE}/`, { params }).pipe(
-      tap(() => {
-        this.isLoading.set(false);
-        this.isAvailable.set(true);
-      }),
-      catchError(err => {
-        this.isLoading.set(false);
-        this.isAvailable.set(false);
-        return throwError(() => err);
-      })
-    );
+    const params: Record<string, string> = {};
+    if (filters?.city)                    params['city']      = filters.city;
+    if (filters?.type)                    params['type']      = filters.type;
+    if (filters?.priceMin)                params['min_price'] = String(filters.priceMin);
+    if (filters?.priceMax)                params['max_price'] = String(filters.priceMax);
+    if (filters?.min_price)               params['min_price'] = String(filters.min_price);
+    if (filters?.max_price)               params['max_price'] = String(filters.max_price);
+    if (filters?.available !== undefined) params['available'] = String(filters.available);
+    return this.http.get<Property[]>(`${this.BASE}/`, { params });
   }
 
-  // GET /api/properties/:id/
-  getPropertyById(id: number): Observable<Property> {
+  // Alias utilisé dans publish-property
+  list(filters?: PropertyFilters): Observable<Property[]> {
+    return this.getProperties(filters);
+  }
+
+  // ── Détail par ID ──────────────────────────────────────
+  // Anciennement getPropertyById(id: string) — conservé
+  getPropertyById(id: string | number): Observable<Property> {
     return this.http.get<Property>(`${this.BASE}/${id}/`);
   }
 
-  // GET /api/properties/mine/
-  getMyProperties(): Observable<Property[]> {
+  // Alias court
+  get(id: string | number): Observable<Property> {
+    return this.getPropertyById(id);
+  }
+
+  // ── Mes propriétés ─────────────────────────────────────
+  mine(): Observable<Property[]> {
     return this.http.get<Property[]>(`${this.BASE}/mine/`);
   }
 
-  // POST /api/properties/
-  createProperty(data: FormData): Observable<Property> {
-    return this.http.post<Property>(`${this.BASE}/`, data);
+  // ── Villes disponibles ─────────────────────────────────
+  getCities(): Observable<string[]> {
+    return this.http.get<string[]>('/api/cities/');
   }
 
-  // PATCH /api/properties/:id/
-  updateProperty(id: number, data: FormData): Observable<Property> {
-    return this.http.patch<Property>(`${this.BASE}/${id}/`, data);
+  // ── Création ───────────────────────────────────────────
+  create(payload: PropertyCreatePayload, photos: File[]): Observable<Property> {
+    const fd = this.buildFormData(payload as unknown as Record<string, unknown>, photos);
+    return this.http.post<Property>(`${this.BASE}/`, fd);
   }
 
-  // DELETE /api/properties/:id/
-  deleteProperty(id: number): Observable<void> {
+  // ── Modification partielle ─────────────────────────────
+  update(
+    id: string | number,
+    payload: Partial<PropertyCreatePayload>,
+    newPhotos?: File[]
+  ): Observable<Property> {
+    const fd = this.buildFormData(payload as Record<string, unknown>, newPhotos ?? []);
+    return this.http.patch<Property>(`${this.BASE}/${id}/`, fd);
+  }
+
+  // ── Désactivation logique ──────────────────────────────
+  deactivate(id: string | number): Observable<void> {
     return this.http.delete<void>(`${this.BASE}/${id}/`);
   }
 
-  // DELETE /api/properties/:id/photos/:photoId/
-  deletePhoto(propertyId: number, photoId: number): Observable<void> {
+  // ── Suppression photo ──────────────────────────────────
+  deletePhoto(propertyId: string | number, photoId: string | number): Observable<void> {
     return this.http.delete<void>(`${this.BASE}/${propertyId}/photos/${photoId}/`);
+  }
+
+  // ── Réservation ────────────────────────────────────────
+  createReservation(
+    data: ReservationRequest
+  ): Observable<{ success: boolean; reservationId?: string }> {
+    return this.http.post<{ success: boolean; reservationId?: string }>(
+      '/api/reservations/', data
+    );
+  }
+
+  // ── Helper FormData (camelCase → snake_case) ───────────
+  private buildFormData(data: Record<string, unknown>, photos: File[]): FormData {
+    const fd = new FormData();
+    const fieldMap: Record<string, string> = {
+      chargesIncluded: 'charges_included',
+      availableFrom:   'available_from',
+    };
+    for (const [key, val] of Object.entries(data)) {
+      if (val === undefined || val === null) continue;
+      const apiKey = fieldMap[key] ?? key;
+      fd.append(apiKey, Array.isArray(val) ? JSON.stringify(val) : String(val));
+    }
+    photos.forEach(file => fd.append('photos', file, file.name));
+    return fd;
   }
 }

@@ -1,14 +1,13 @@
-import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
-import { Router } from '@angular/router'
+import {Injectable, signal} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {Observable, tap} from 'rxjs';
+import {Router} from '@angular/router';
+
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private apiUrl = 'http://localhost:8000/api/auth';
-
-  // Using Angular 16+ signals for reactive user state
   public currentUser = signal<any>(null);
 
   constructor(private http: HttpClient, private router: Router) {
@@ -32,7 +31,7 @@ export class AuthService {
   }
 
   verifyMfa(mfa_token: string, code: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/mfa-verify/`, { mfa_token, code }).pipe(
+    return this.http.post(`${this.apiUrl}/mfa-verify/`, {mfa_token, code}).pipe(
       tap((res: any) => {
         if (res.tokens) {
           this.setTokens(res.tokens);
@@ -47,7 +46,7 @@ export class AuthService {
     return this.http.get(`${this.apiUrl}/profile/`);
   }
 
-  setTokens(tokens: { access: string, refresh: string }) {
+  setTokens(tokens: { access: string; refresh: string }) {
     localStorage.setItem('access_token', tokens.access);
     localStorage.setItem('refresh_token', tokens.refresh);
   }
@@ -71,6 +70,11 @@ export class AuthService {
     return !!this.getAccessToken();
   }
 
+  // Helper centralisé pour extraire le message d'erreur du format custom
+  extractError(err: any): string {
+    return err?.error?.error?.message || 'Une erreur est survenue.';
+  }
+
   redirectByRole(user: any) {
     const role = user?.role;
     if (role === 'proprietaire') {
@@ -83,14 +87,22 @@ export class AuthService {
       this.router.navigate(['/']);
     }
   }
+
   getCurrentUser(): any {
     return this.currentUser() || JSON.parse(localStorage.getItem('user') || 'null');
   }
 
   private loadUserFromStorage() {
-    const user = localStorage.getItem('user');
-    if (user) {
-      this.currentUser.set(JSON.parse(user));
+    const raw = localStorage.getItem('user');
+    if (raw) {
+      try {
+        const user = JSON.parse(raw);
+        this.currentUser.set(user);
+      } catch {
+        this.currentUser.set(null);
+      }
     }
   }
+
+
 }

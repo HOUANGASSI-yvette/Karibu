@@ -1,0 +1,202 @@
+<!-- pages/soumettre-documents/soumettre-documents.component.html -->
+<div class="min-h-screen bg-stone-100 flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="bg-white border-b border-stone-200 px-4 lg:px-8 py-4 sticky top-0 z-20">
+    <div class="max-w-3xl mx-auto flex items-center justify-between">
+      <a routerLink="/dashboard" class="flex items-center gap-2 group">
+        <div class="w-9 h-9 bg-amber-800 flex items-center justify-center text-white font-bold text-sm group-hover:bg-amber-700 transition-colors">KA</div>
+        <span class="text-lg font-semibold text-stone-800 tracking-wide">KARIBU</span>
+      </a>
+      <a routerLink="/dashboard" class="text-sm text-stone-500 hover:text-amber-800 transition-colors flex items-center gap-1.5">
+        <lucide-icon [img]="ArrowLeft" class="w-4 h-4"></lucide-icon>
+        Tableau de bord
+      </a>
+    </div>
+  </nav>
+
+  <div class="flex-1 max-w-3xl mx-auto w-full px-4 py-8">
+
+    <!-- En-tête -->
+    <div class="mb-8">
+      <div class="flex items-center gap-2 mb-3">
+        <div class="w-1.5 h-6 bg-amber-800"></div>
+        <span class="text-xs font-medium text-stone-500 uppercase tracking-widest">Vérification</span>
+      </div>
+      <h1 class="text-3xl font-light text-stone-900 tracking-tight">Vos documents</h1>
+      <p class="text-stone-500 mt-1 text-sm">Soumettez les pièces requises pour valider votre compte propriétaire.</p>
+    </div>
+
+    <!-- Bannière statut global -->
+    @if (!isLoading()) {
+      @if (statutVerif() === 'verifie') {
+        <div class="mb-6 bg-green-50 border border-green-200 px-5 py-4 flex items-center gap-3">
+          <lucide-icon [img]="ShieldCheck" class="w-5 h-5 text-green-700 shrink-0"></lucide-icon>
+          <div>
+            <p class="text-sm font-semibold text-green-800">Compte vérifié</p>
+            <p class="text-xs text-green-700 mt-0.5">Vous pouvez publier des biens sur la plateforme.</p>
+          </div>
+        </div>
+      } @else if (statutVerif() === 'rejete') {
+        <div class="mb-6 bg-red-50 border border-red-200 px-5 py-4 flex items-center gap-3">
+          <lucide-icon [img]="AlertCircle" class="w-5 h-5 text-red-600 shrink-0"></lucide-icon>
+          <div>
+            <p class="text-sm font-semibold text-red-700">Vérification rejetée</p>
+            <p class="text-xs text-red-600 mt-0.5">Corrigez les documents indiqués ci-dessous et soumettez à nouveau.</p>
+          </div>
+        </div>
+      } @else {
+        <div class="mb-6 bg-amber-50 border border-amber-200 px-5 py-4 flex items-center gap-3">
+          <lucide-icon [img]="Clock" class="w-5 h-5 text-amber-700 shrink-0"></lucide-icon>
+          <div>
+            <p class="text-sm font-semibold text-amber-800">Vérification en cours</p>
+            <p class="text-xs text-amber-700 mt-0.5">Soumettez tous les documents requis. La vérification prend moins de 24 h.</p>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- Messages feedback -->
+    @if (successMessage()) {
+      <div class="mb-4 bg-green-50 border border-green-200 px-4 py-3 flex items-center gap-2">
+        <lucide-icon [img]="CheckCircle" class="w-4 h-4 text-green-600 shrink-0"></lucide-icon>
+        <p class="text-sm text-green-700">{{ successMessage() }}</p>
+      </div>
+    }
+    @if (errorMessage()) {
+      <div class="mb-4 bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2">
+        <div class="w-4 h-4 bg-red-500 flex items-center justify-center shrink-0">
+          <span class="text-white text-xs font-bold">!</span>
+        </div>
+        <p class="text-sm text-red-700">{{ errorMessage() }}</p>
+      </div>
+    }
+
+    <!-- Chargement -->
+    @if (isLoading()) {
+      <div class="bg-white border border-stone-200 p-12 flex items-center justify-center">
+        <div class="flex flex-col items-center gap-3">
+          <div class="w-6 h-6 border-2 border-amber-800 border-t-transparent animate-spin"></div>
+          <p class="text-sm text-stone-500">Chargement de votre profil…</p>
+        </div>
+      </div>
+    } @else {
+
+      <!-- Liste des documents -->
+      <div class="bg-white border border-stone-200 divide-y divide-stone-100">
+
+        @for (config of docConfigs; track config.key) {
+          @let doc = getLatestDoc(config.key);
+
+          <div class="px-6 py-5">
+            <div class="flex items-start justify-between gap-4">
+
+              <!-- Infos document -->
+              <div class="flex items-start gap-4 flex-1 min-w-0">
+
+                <!-- Icône statut -->
+                <div [class]="
+                  doc?.statut === 'valide'     ? 'w-10 h-10 bg-green-100 flex items-center justify-center shrink-0' :
+                  doc?.statut === 'rejete'     ? 'w-10 h-10 bg-red-100 flex items-center justify-center shrink-0' :
+                  doc?.statut === 'en_attente' ? 'w-10 h-10 bg-amber-100 flex items-center justify-center shrink-0' :
+                                                 'w-10 h-10 bg-stone-100 flex items-center justify-center shrink-0'">
+                  @if (doc?.statut === 'valide') {
+                    <lucide-icon [img]="CheckCircle" class="w-5 h-5 text-green-600"></lucide-icon>
+                  } @else if (doc?.statut === 'rejete') {
+                    <lucide-icon [img]="AlertCircle" class="w-5 h-5 text-red-500"></lucide-icon>
+                  } @else if (doc?.statut === 'en_attente') {
+                    <lucide-icon [img]="Clock" class="w-5 h-5 text-amber-600"></lucide-icon>
+                  } @else {
+                    <lucide-icon [img]="FileText" class="w-5 h-5 text-stone-400"></lucide-icon>
+                  }
+                </div>
+
+                <!-- Texte -->
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <p class="text-sm font-medium text-stone-900">{{ config.label }}</p>
+                    @if (config.required) {
+                      <span class="text-red-500 text-xs font-medium">Requis</span>
+                    } @else {
+                      <span class="text-stone-400 text-xs">Optionnel</span>
+                    }
+                    @if (doc) {
+                      <span [class]="
+                        doc.statut === 'valide'     ? 'text-xs px-2 py-0.5 bg-green-100 text-green-700 font-medium' :
+                        doc.statut === 'rejete'     ? 'text-xs px-2 py-0.5 bg-red-100 text-red-600 font-medium' :
+                                                      'text-xs px-2 py-0.5 bg-amber-100 text-amber-700 font-medium'">
+                        {{ statutLabel(doc.statut) }}
+                      </span>
+                    }
+                  </div>
+                  <p class="text-xs text-stone-500 mt-0.5">{{ config.description }}</p>
+
+                  @if (doc) {
+                    <p class="text-xs text-stone-400 mt-1 truncate">{{ doc.fichier_nom }}</p>
+                  }
+
+                  <!-- Commentaire admin si rejeté -->
+                  @if (doc?.statut === 'rejete' && doc?.commentaire_admin) {
+                    <div class="mt-2 bg-red-50 border border-red-100 px-3 py-2">
+                      <p class="text-xs text-red-600">
+                        <span class="font-medium">Motif :</span> {{ doc?.commentaire_admin }}
+                      </p>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex items-center gap-2 shrink-0">
+
+                <!-- Supprimer (si en_attente) -->
+                @if (doc?.statut === 'en_attente') {
+                  <button
+                    type="button"
+                    (click)="supprimerDoc(doc!.id)"
+                    [disabled]="deletingId() === doc!.id"
+                    class="w-8 h-8 border border-stone-200 flex items-center justify-center text-stone-400 hover:text-red-500 hover:border-red-200 disabled:opacity-40 transition-all">
+                    @if (deletingId() === doc!.id) {
+                      <div class="w-3 h-3 border border-stone-400 border-t-transparent animate-spin"></div>
+                    } @else {
+                      <lucide-icon [img]="Trash2" class="w-3.5 h-3.5"></lucide-icon>
+                    }
+                  </button>
+                }
+
+                <!-- Upload / Re-soumettre -->
+                @if (doc?.statut !== 'valide') {
+                  <input
+                    [id]="'file-' + config.key"
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    (change)="onFileSelected($event, config.key)"
+                    class="hidden">
+                  <button
+                    type="button"
+                    (click)="triggerFileInput(config.key)"
+                    [disabled]="uploadingKey() === config.key"
+                    class="flex items-center gap-2 px-4 py-2 bg-amber-800 text-white text-xs font-medium hover:bg-amber-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all">
+                    @if (uploadingKey() === config.key) {
+                      <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin"></div>
+                      <span>Envoi…</span>
+                    } @else {
+                      <lucide-icon [img]="Upload" class="w-3.5 h-3.5"></lucide-icon>
+                      <span>{{ doc ? 'Remplacer' : 'Soumettre' }}</span>
+                    }
+                  </button>
+                }
+
+              </div>
+            </div>
+          </div>
+        }
+
+      </div>
+
+      <p class="text-center text-xs text-stone-400 mt-6">
+        Formats acceptés : JPG, PNG, PDF · Taille max : 5 Mo par document.
+      </p>
+    }
+  </div>
+</div>

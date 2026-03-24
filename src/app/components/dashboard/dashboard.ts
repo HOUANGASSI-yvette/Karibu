@@ -11,6 +11,10 @@ import { TenantsSectionComponent } from './sections/tenants-section/tenants-sect
 import { PaymentsSectionComponent } from './sections/payments-section/payments-section';
 import { MessagesSectionComponent } from './sections/messages-section/messages-section';
 import { RequestsSectionComponent } from './sections/requests-section/requests-section';
+import { ChangeDetectorRef } from '@angular/core';
+import {AdminUsersSectionComponent} from './sections/admin-users-section/admin-users-section';
+import {AdminDocumentsSectionComponent} from './sections/admin-documents-section/admin-documents-section';
+
 
 export interface OwnerStats {
   totalRevenue: number; revenueEvolution: number;
@@ -54,6 +58,8 @@ export interface ReservationRequest {
     PaymentsSectionComponent,
     MessagesSectionComponent,
     RequestsSectionComponent,
+    AdminUsersSectionComponent,
+    AdminDocumentsSectionComponent,
   ],
   templateUrl: './dashboard.html',
 })
@@ -76,6 +82,7 @@ export class DashboardComponent implements OnInit {
     public authService: AuthService,
     private router: Router,
     private toast: ToastService,
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() { this.loadDashboard(); }
@@ -90,6 +97,7 @@ export class DashboardComponent implements OnInit {
       this.messages   = MOCK_MESSAGES;
       this.requests   = MOCK_REQUESTS;
       this.isLoading  = false;
+      this.cdr.detectChanges();
     }, 600);
   }
 

@@ -2,7 +2,8 @@ import { Component, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar/navbar';
-import { PropertyService, Property, PropertyFilters } from '../../services/property.service';
+import { PropertyService } from '../../services/property.service';
+import { Property, PropertyFilters } from '../../models/property.model';
 import { PropertyCardComponent } from './property-card/property-card';
 import { FilterBarComponent } from './filter-bar/filter-bar';
 import { LucideAngularModule, WifiOff, RefreshCw, Home } from 'lucide-angular';
@@ -41,12 +42,13 @@ export class ListingsComponent implements OnInit {
     this.cdr.detectChanges();
 
     this.propertyService.getProperties(filters).subscribe({
-      next: (data: any) => {
-        this.properties = Array.isArray(data) ? data : (data?.results ?? []);
+      next: (data: unknown) => {
+        const raw = data as Property[] | { results: Property[] };
+        this.properties = Array.isArray(raw) ? raw : (raw?.results ?? []);
         this.isLoading  = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: (err: { status: number }) => {
         this.isLoading    = false;
         this.errorMessage = err.status === 0
           ? 'Serveur inaccessible. Vérifiez votre connexion.'

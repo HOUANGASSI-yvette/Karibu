@@ -3,9 +3,19 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../../shared/navbar/navbar';
-import { PropertyService, Property } from '../../services/property.service';
+import { PropertyService } from '../../services/property.service';
+import {
+  Property,
+  PropertyPhoto,
+  PropertyAmenity,
+  getCoverPhoto,
+} from '../../models/property.model';
 import { AuthService } from '../../services/auth.service';
-import { LucideAngularModule, WifiOff, ChevronLeft, ChevronRight, Shield, MessageSquare, Check } from 'lucide-angular';
+import {
+  LucideAngularModule,
+  WifiOff, ChevronLeft, ChevronRight,
+  Shield, MessageSquare, Check,
+} from 'lucide-angular';
 
 @Component({
   selector: 'app-property-detail',
@@ -15,12 +25,12 @@ import { LucideAngularModule, WifiOff, ChevronLeft, ChevronRight, Shield, Messag
 })
 export class PropertyDetailComponent implements OnInit {
 
-  readonly OfflineIcon  = WifiOff;
-  readonly PrevIcon     = ChevronLeft;
-  readonly NextIcon     = ChevronRight;
-  readonly ShieldIcon   = Shield;
-  readonly MessageIcon  = MessageSquare;
-  readonly CheckIcon    = Check;
+  readonly OfflineIcon = WifiOff;
+  readonly PrevIcon    = ChevronLeft;
+  readonly NextIcon    = ChevronRight;
+  readonly ShieldIcon  = Shield;
+  readonly MessageIcon = MessageSquare;
+  readonly CheckIcon   = Check;
 
   property:    Property | null = null;
   isLoading    = true;
@@ -37,13 +47,16 @@ export class PropertyDetailComponent implements OnInit {
   today = new Date().toISOString().split('T')[0];
 
   typeLabels: Record<string, string> = {
-    apartment:  'Appartement',
-    house:      'Maison',
-    studio:     'Studio',
-    villa:      'Villa',
-    office:     'Bureau',
-    land:       'Terrain',
-    commercial: 'Local commercial',
+    apartment:   'Appartement',
+    house:       'Maison',
+    studio:      'Studio',
+    villa:       'Villa',
+    office:      'Bureau',
+    land:        'Terrain',
+    commercial:  'Local commercial',
+    appartement: 'Appartement',
+    maison:      'Maison',
+    chambre:     'Chambre',
   };
 
   constructor(
@@ -51,15 +64,12 @@ export class PropertyDetailComponent implements OnInit {
     private router:          Router,
     private propertyService: PropertyService,
     private authService:     AuthService,
-    private cdr:             ChangeDetectorRef
+    private cdr:             ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
-    if (!id) {
-      this.router.navigate(['/listings']);
-      return;
-    }
+    if (!id) { void this.router.navigate(['/listings']); return; }
     this.loadProperty(Number(id));
   }
 
@@ -68,65 +78,90 @@ export class PropertyDetailComponent implements OnInit {
     this.cdr.detectChanges();
 
     this.propertyService.getPropertyById(id).subscribe({
-      next: (data) => {
+      next: (data: Property) => {
         this.property  = data;
         this.isLoading = false;
         this.cdr.detectChanges();
       },
-      error: (err) => {
+      error: (err: { status: number }) => {
         this.errorMessage = err.status === 404
           ? 'Ce logement est introuvable.'
           : 'Impossible de charger cette annonce.';
         this.isLoading = false;
         this.cdr.detectChanges();
-      }
+      },
     });
   }
 
-  // ── Galerie photos ────────────────────────────────────────
+  // ── Données normalisées pour les templates ────────────────
+  // Le template ne voit jamais string[] | PropertyPhoto[] :
+  // il reçoit toujours PropertyPhoto[] ou PropertyAmenity[].
+
+  get normalizedPhotos(): PropertyPhoto[] {
+    if (!this.property?.photos?.length) return [];
+    if (typeof this.property.photos[0] === 'string') {
+      return (this.property.photos as string[]).map((url, i) => ({
+        id: i,
+        url,
+        order: i,
+        uploaded_at: '',
+      }));
+    }
+    return this.property.photos as PropertyPhoto[];
+  }
+
+  get normalizedAmenities(): PropertyAmenity[] {
+    if (!this.property?.amenities?.length) return [];
+    if (typeof this.property.amenities[0] === 'string') {
+      return (this.property.amenities as string[]).map((name, i) => ({
+        id: i,
+        name,
+      }));
+    }
+    return this.property.amenities as PropertyAmenity[];
+  }
+
+  // ── Galerie ───────────────────────────────────────────────
 
   get activePhotoUrl(): string {
     if (!this.property) return '';
-    const photos = this.property.photos;
-    if (!photos?.length) return this.property.cover_photo || '';
-    return photos[this.activePhotoIndex]?.url || this.property.cover_photo || '';
+    const photos = this.normalizedPhotos;
+    if (photos.length) return photos[this.activePhotoIndex]?.url ?? '';
+    return getCoverPhoto(this.property);
   }
 
   get totalPhotos(): number {
-    return this.property?.photos?.length ?? 0;
+    return this.normalizedPhotos.length;
   }
 
   selectPhoto(index: number) { this.activePhotoIndex = index; }
 
   prevPhoto() {
     if (!this.totalPhotos) return;
-    this.activePhotoIndex = (this.activePhotoIndex - 1 + this.totalPhotos) % this.totalPhotos;
+    this.activePhotoIndex =
+      (this.activePhotoIndex - 1 + this.totalPhotos) % this.totalPhotos;
   }
 
   nextPhoto() {
     if (!this.totalPhotos) return;
-    this.activePhotoIndex = (this.activePhotoIndex + 1) % this.totalPhotos;
+    this.activePhotoIndex =
+      (this.activePhotoIndex + 1) % this.totalPhotos;
   }
 
   // ── Réservation ───────────────────────────────────────────
 
   submitReservation() {
     if (!this.property) return;
-    this.isSubmitting    = true;
+    this.isSubmitting     = true;
     this.reservationError = '';
 
     const user = this.authService.getCurrentUser();
-    if (!user) {
-      this.router.navigate(['/login']);
-      return;
-    }
+    if (!user) { void this.router.navigate(['/login']); return; }
 
-    // ⚠️ Ton backend n'a pas encore d'endpoint réservation exposé
-    // Adapte quand tu l'ajoutes — pour l'instant on simule
     setTimeout(() => {
-      this.reservationSuccess = true;
+      this.reservationSuccess  = true;
       this.showReservationForm = false;
-      this.isSubmitting = false;
+      this.isSubmitting        = false;
       this.cdr.detectChanges();
     }, 800);
   }

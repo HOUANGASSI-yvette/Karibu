@@ -1,11 +1,12 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, computed, signal,  } from '@angular/core';
 import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import {
   LucideAngularModule,
-  Home, Bell, LogOut, Menu, X,
-  Building2, MessageSquare, User
+  Bell, LogOut, Menu, X,
+  Building2, MessageSquare, LayoutDashboard,
+  Home, Search, ShieldCheck, User, ChevronDown,
 } from 'lucide-angular';
 
 @Component({
@@ -19,48 +20,53 @@ export class NavbarComponent {
   @Input() pageTitle = '';
 
   mobileMenuOpen = false;
+  userMenuOpen   = false;
 
-  readonly HomeIcon       = Home;
-  readonly BellIcon       = Bell;
-  readonly LogOutIcon     = LogOut;
-  readonly MenuIcon       = Menu;
-  readonly XIcon          = X;
-  readonly BuildingIcon   = Building2;
-  readonly MessageIcon    = MessageSquare;
-  readonly UserIcon       = User;
+  readonly BellIcon      = Bell;
+  readonly LogOutIcon    = LogOut;
+  readonly MenuIcon      = Menu;
+  readonly XIcon         = X;
+  readonly BuildingIcon  = Building2;
+  readonly MessageIcon   = MessageSquare;
+  readonly DashboardIcon = LayoutDashboard;
+  readonly HomeIcon      = Home;
+  readonly SearchIcon    = Search;
+  readonly ShieldIcon    = ShieldCheck;
+  readonly UserIcon      = User;
+  readonly ChevronDown   = ChevronDown;
 
-  constructor(
-    public authService: AuthService,
-    private router: Router
-  ) {}
+  constructor(public authService: AuthService, private router: Router) {}
 
-  get currentUser() {
-    return this.authService.getCurrentUser();
+
+  get currentUser() { return this.authService.currentUser(); }
+
+  get role(): string       { return this.currentUser?.role ?? ''; }
+  get isProprietaire()     { return this.role === 'proprietaire'; }
+  get isLocataire()        { return this.role === 'locataire'; }
+  get isAdmin()            { return this.role === 'admin'; }
+
+  get proprietaireStatut() {
+    return this.currentUser?.proprietaire_profile?.statut_verification ?? 'en_attente';
   }
+  get isVerified()         { return this.proprietaireStatut === 'valide'; }
 
   get userInitials(): string {
-    const user = this.currentUser;
-    if (!user) return '?';
-    const first = user.first_name?.charAt(0) || user.username?.charAt(0) || '';
-    const last  = user.last_name?.charAt(0)  || '';
-    return (first + last).toUpperCase() || user.username?.substring(0, 2).toUpperCase() || '?';
+    const u = this.currentUser;
+    if (!u) return '?';
+    const f = u.first_name?.charAt(0) || u.username?.charAt(0) || '';
+    const l = u.last_name?.charAt(0) || '';
+    return (f + l).toUpperCase() || u.username?.substring(0, 2).toUpperCase() || '?';
   }
 
   get userName(): string {
-    const user = this.currentUser;
-    if (!user) return '';
-    if (user.first_name && user.last_name) {
-      return `${user.first_name} ${user.last_name.charAt(0)}.`;
-    }
-    return user.username || '';
+    const u = this.currentUser;
+    if (!u) return '';
+    if (u.first_name && u.last_name) return `${u.first_name} ${u.last_name.charAt(0)}.`;
+    return u.username || '';
   }
 
-  get userRole(): string {
-    const role = this.currentUser?.role;
-    if (role === 'proprietaire') return 'Propriétaire';
-    if (role === 'locataire')    return 'Locataire';
-    if (role === 'admin')        return 'Administrateur';
-    return '';
+  get userRoleLabel(): string {
+    return ({ proprietaire: 'Propriétaire', locataire: 'Locataire', admin: 'Administrateur' } as any)[this.role] ?? '';
   }
 
   logout() {
@@ -68,7 +74,7 @@ export class NavbarComponent {
     this.router.navigate(['/login']);
   }
 
-  toggleMobileMenu() {
-    this.mobileMenuOpen = !this.mobileMenuOpen;
-  }
+  toggleMobileMenu() { this.mobileMenuOpen = !this.mobileMenuOpen; }
+  toggleUserMenu()   { this.userMenuOpen   = !this.userMenuOpen; }
+  closeUserMenu()    { this.userMenuOpen   = false; }
 }

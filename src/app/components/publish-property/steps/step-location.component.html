@@ -1,0 +1,85 @@
+<div class="p-6 sm:p-8">
+  <div class="flex items-center gap-3 mb-6">
+    <div class="w-6 h-6 bg-amber-800 flex items-center justify-center text-white text-xs font-bold">1</div>
+    <h2 class="text-lg font-medium text-stone-900">Type & localisation</h2>
+  </div>
+
+  <div class="space-y-5">
+
+    <!-- Titre -->
+    <div>
+      <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+        Titre de l'annonce <span class="text-red-500">*</span>
+      </label>
+      <input type="text" [(ngModel)]="form.title" name="title"
+        placeholder="Ex : Studio lumineux centre-ville Lomé" maxlength="80"
+        class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all duration-200">
+      <p class="text-xs text-stone-400 mt-1 text-right">{{ form.title.length }}/80</p>
+    </div>
+
+    <!-- Type de bien -->
+    <div>
+      <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-3">
+        Type de bien <span class="text-red-500">*</span>
+      </label>
+      <div class="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        @for (type of propertyTypes; track type[0]) {
+          <button type="button" (click)="form.type = type[0]"
+            [class]="form.type === type[0]
+              ? 'py-2.5 px-3 text-xs font-medium border-2 border-amber-800 bg-amber-50 text-amber-800 transition-all'
+              : 'py-2.5 px-3 text-xs text-stone-600 border border-stone-200 hover:border-amber-300 hover:bg-stone-50 transition-all'">
+            {{ type[1] }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Ville + Quartier -->
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+          Ville <span class="text-red-500">*</span>
+        </label>
+        <select [(ngModel)]="form.city" name="city"
+          class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all appearance-none">
+          <option value="" disabled>Sélectionnez une ville</option>
+          @for (city of cities; track city) {
+            <option [value]="city">{{ city }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+          Quartier <span class="text-red-500">*</span>
+        </label>
+        <input type="text" [(ngModel)]="form.district" name="district"
+          placeholder="Ex : Tokoin, Bè, Adakpamé…"
+          class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all">
+      </div>
+    </div>
+
+    <!-- Adresse optionnelle -->
+    <div>
+      <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+        Adresse complète <span class="text-stone-400 font-normal normal-case">(optionnel)</span>
+      </label>
+      <input type="text" [(ngModel)]="form.address" name="address"
+        placeholder="Rue, numéro, repère…"
+        class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all">
+    </div>
+
+    <!-- Description -->
+    <div>
+      <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+        Description <span class="text-red-500">*</span>
+      </label>
+      <textarea [(ngModel)]="form.description" name="description"
+        rows="5" maxlength="1000"
+        placeholder="Décrivez votre bien : environnement, points forts, proximité des commodités…"
+        class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm placeholder:text-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white transition-all resize-none">
+      </textarea>
+      <p class="text-xs text-stone-400 mt-1 text-right">{{ form.description.length }}/1000</p>
+    </div>
+
+  </div>
+</div>

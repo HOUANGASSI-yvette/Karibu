@@ -1,18 +1,47 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import {
+  LucideAngularModule,
+  Eye, EyeOff, AlertCircle, LoaderCircle,
+  Check, CheckCircle, ArrowRight, ArrowLeft,
+  KeyRound, Home, Mail, Lock, User, Phone,
+  MapPin, Wallet, Building2
+} from 'lucide-angular';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [RouterLink, FormsModule, CommonModule],
+  imports: [RouterLink, FormsModule, CommonModule, LucideAngularModule],
   templateUrl: './register.html',
   styleUrl: './register.css',
 })
 export class RegisterComponent {
-  constructor(private authService: AuthService) {}
+  readonly Eye = Eye;
+  readonly EyeOff = EyeOff;
+  readonly AlertCircle = AlertCircle;
+  readonly LoaderCircle = LoaderCircle;
+  readonly Check = Check;
+  readonly CheckCircle = CheckCircle;
+  readonly ArrowRight = ArrowRight;
+  readonly ArrowLeft = ArrowLeft;
+  readonly KeyRound = KeyRound;
+  readonly Home = Home;
+  readonly Mail = Mail;
+  readonly Lock = Lock;
+  readonly User = User;
+  readonly Phone = Phone;
+  readonly MapPin = MapPin;
+  readonly Wallet = Wallet;
+  readonly Building2 = Building2;
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
+
   currentStep = 1;
   selectedRole: 'tenant' | 'owner' | null = null;
   showPassword = false;
@@ -44,11 +73,11 @@ export class RegisterComponent {
   cities = ['Lomé', 'Kara', 'Kpalimé', 'Sokodé', 'Atakpamé', 'Dapaong', 'Tsévié', 'Notsé', 'Autre'];
 
   budgets = [
-    { value: '50000', label: 'Jusqu\'à 50 000 CFA' },
-    { value: '75000', label: 'Jusqu\'à 75 000 CFA' },
-    { value: '100000', label: 'Jusqu\'à 100 000 CFA' },
-    { value: '150000', label: 'Jusqu\'à 150 000 CFA' },
-    { value: '200000', label: 'Jusqu\'à 200 000 CFA' },
+    { value: '50000', label: "Jusqu'à 50 000 CFA" },
+    { value: '75000', label: "Jusqu'à 75 000 CFA" },
+    { value: '100000', label: "Jusqu'à 100 000 CFA" },
+    { value: '150000', label: "Jusqu'à 150 000 CFA" },
+    { value: '200000', label: "Jusqu'à 200 000 CFA" },
     { value: '200000+', label: 'Plus de 200 000 CFA' },
   ];
 
@@ -68,7 +97,7 @@ export class RegisterComponent {
       ];
     }
     return [
-      'Publication illimitée d\'annonces',
+      "Publication illimitée d'annonces",
       'Tableau de bord de gestion multi-biens',
       'Encaissement des loyers et quittances auto',
       'Contrats numériques et signatures en ligne',
@@ -96,7 +125,6 @@ export class RegisterComponent {
     if (/[0-9]/.test(pwd)) score++;
     if (/[^A-Za-z0-9]/.test(pwd)) score++;
     this.passwordStrength = score;
-
     const labels = ['', 'Faible', 'Moyen', 'Fort', 'Très fort'];
     this.strengthLabel = labels[score] ?? '';
   }
@@ -114,12 +142,10 @@ export class RegisterComponent {
 
   nextStep() {
     this.errorMessage = '';
-
     if (this.currentStep === 1 && !this.selectedRole) return;
-
     if (this.currentStep === 2) {
       if (!this.registerData.firstName || !this.registerData.lastName ||
-          !this.registerData.email || !this.registerData.password) {
+        !this.registerData.email || !this.registerData.password) {
         this.errorMessage = 'Veuillez remplir tous les champs obligatoires.';
         return;
       }
@@ -132,7 +158,6 @@ export class RegisterComponent {
         return;
       }
     }
-
     this.currentStep++;
   }
 
@@ -143,34 +168,44 @@ export class RegisterComponent {
   onSubmit() {
     if (!this.acceptedTerms) return;
     this.isLoading = true;
+    this.errorMessage = '';
 
-    // We generate a simple username from email since the backend expects a username
-    const generatedUsername = this.registerData.email.split('@')[0] + Math.floor(Math.random() * 1000);
-    
-    const payload = {
+    const generatedUsername = this.registerData.email.split('@')[0]
+      + Math.floor(Math.random() * 1000);
+
+    const payload: any = {
       username: generatedUsername,
       email: this.registerData.email,
       password: this.registerData.password,
-      role: this.selectedRole === 'tenant' ? 'locataire' : 'proprietaire'
+      role: this.selectedRole === 'tenant' ? 'locataire' : 'proprietaire',
+      first_name: this.registerData.firstName,
+      last_name: this.registerData.lastName,
+      telephone: this.registerData.phone,
+      city: this.registerData.city,
     };
+
+    if (this.selectedRole === 'tenant') {
+      payload.budget = this.registerData.budget;
+      payload.property_types = this.registerData.propertyTypes;
+    } else {
+      payload.property_count = this.registerData.propertyCount;
+    }
 
     this.authService.register(payload).subscribe({
       next: (res) => {
-        // Auto login with the tokens returned by registration
         if (res.tokens) {
           this.authService.setTokens({
             access: res.tokens.access,
             refresh: res.tokens.refresh
           });
-          // Not calling currentUser.set(res.user) since authService is not injected here yet
-          // Wait, I need to inject AuthService in the constructor. Let's fix that.
         }
         this.isLoading = false;
         this.currentStep = 4;
+        setTimeout(() => this.router.navigate(['/login']), 3000);
       },
       error: (err) => {
         this.isLoading = false;
-        this.errorMessage = err.error?.detail || err.error?.email?.[0] || 'Erreur lors de l\'inscription.';
+        this.errorMessage = this.authService.extractError(err);
       }
     });
   }

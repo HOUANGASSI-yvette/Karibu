@@ -16,6 +16,7 @@
       [tenantsCount]="tenants.length"
       [unreadCount]="unreadCount"
       [pendingCount]="pendingCount"
+      [isAdmin]="authService.getCurrentUser()?.role === 'admin'"
       (sectionChange)="onSectionChange($event)">
     </app-dashboard-sidebar>
 
@@ -71,6 +72,13 @@
             (requestHandled)="onRequestHandled($event)">
           </app-requests-section>
         }
+        @if (activeSection === 'admin-users') {
+          <app-admin-users-section></app-admin-users-section>
+        }
+        @if (activeSection === 'admin-documents') {
+          <app-admin-documents-section></app-admin-documents-section>
+        }
+
       }
 
     </main>
