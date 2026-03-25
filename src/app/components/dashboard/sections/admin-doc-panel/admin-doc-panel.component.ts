@@ -56,10 +56,12 @@ export class AdminDocPanelComponent {
     const p = this.proprietaire();
     if (!p) return;
     this.docService.getDetailProprietaire(p.id).subscribe({
-      next: (data) => this.proprietaire.set(data),
+      next: (data) => {
+        this.proprietaire.set({ ...data });
+        this.docActif.set(null);
+      },
     });
   }
-
   close(): void {
     this.isOpen.set(false);
     this.proprietaire.set(null);

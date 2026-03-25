@@ -27,6 +27,7 @@ export interface RoomRequest {
   standalone: true,
   imports: [CommonModule, FormsModule, NavbarComponent, LucideAngularModule, BailModalComponent],
   templateUrl: './messages.html',
+  styleUrl: './messages.css',
 })
 export class MessagesComponent implements OnInit, OnDestroy {
   @ViewChild('messagesEnd')      messagesEnd!: ElementRef;

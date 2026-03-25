@@ -1,0 +1,341 @@
+<!-- Overlay -->
+<div class="fixed inset-0 z-50 flex justify-end" (click)="onOverlayClick($event)">
+  <div class="absolute inset-0 bg-stone-900/40"></div>
+
+  <!-- Drawer -->
+  <div class="relative bg-white w-full max-w-lg h-full flex flex-col shadow-2xl"
+       (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-stone-200 bg-stone-50 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <lucide-icon [img]="FileTextIcon" class="w-5 h-5 text-amber-800"></lucide-icon>
+        <div>
+          <h2 class="text-base font-semibold text-stone-900">
+            {{ view === 'confirm_resilier' ? 'Résilier le contrat' : 'Contrat de bail' }}
+          </h2>
+          <p class="text-xs text-stone-500">{{ bail?.logement_info?.title || 'Chargement…' }}</p>
+        </div>
+      </div>
+      <button (click)="close.emit()"
+              class="w-8 h-8 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-200 transition-colors">
+        <lucide-icon [img]="XIcon" class="w-4 h-4"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- ── Skeleton ───────────────────────────────────────── -->
+    @if (isLoading) {
+      <div class="flex-1 overflow-y-auto p-5 space-y-4 animate-pulse">
+        <div class="h-12 bg-stone-100 border border-stone-200"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="h-20 bg-stone-100 border border-stone-200"></div>
+          <div class="h-20 bg-stone-100 border border-stone-200"></div>
+        </div>
+        <div class="h-32 bg-stone-100 border border-stone-200"></div>
+        <div class="h-24 bg-stone-100 border border-stone-200"></div>
+        <div class="h-16 bg-stone-100 border border-stone-200"></div>
+      </div>
+    }
+
+    <!-- ── Erreur chargement ──────────────────────────────── -->
+    @if (!isLoading && !bail) {
+      <div class="flex-1 flex items-center justify-center">
+        <div class="text-center space-y-2">
+          <lucide-icon [img]="AlertIcon" class="w-8 h-8 text-stone-300 mx-auto"></lucide-icon>
+          <p class="text-sm text-stone-500">Impossible de charger le contrat.</p>
+          <button (click)="reload()"
+                  class="text-xs text-amber-800 border border-amber-300 px-3 py-1.5 hover:bg-amber-50 transition-colors">
+            Réessayer
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- ── Vue confirmation résiliation ─────────────────────── -->
+    @if (!isLoading && bail && view === 'confirm_resilier') {
+      <div class="flex-1 overflow-y-auto p-5 space-y-4">
+
+        <!-- Avertissement -->
+        <div class="flex items-start gap-3 bg-red-50 border border-red-200 px-4 py-4">
+          <lucide-icon [img]="WarnIcon" class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"></lucide-icon>
+          <div>
+            <p class="text-sm font-semibold text-red-800">Résilier ce bail est irréversible</p>
+            <p class="text-xs text-red-600 mt-1">
+              Le logement sera remis en disponibilité et la résiliation sera enregistrée sur la blockchain.
+            </p>
+          </div>
+        </div>
+
+        <!-- Récap bail -->
+        <div class="border border-stone-200 p-4 space-y-1">
+          <p class="text-sm font-semibold text-stone-800">{{ bail.logement_info?.title }}</p>
+          <p class="text-xs text-stone-500">{{ bail.logement_info?.city }}</p>
+          <p class="text-xs text-stone-500 mt-1">
+            Du {{ bail.date_debut | date:'dd/MM/yyyy' }}
+            @if (bail.date_fin) { au {{ bail.date_fin | date:'dd/MM/yyyy' }} }
+          </p>
+        </div>
+
+        <!-- Motif -->
+        <div>
+          <label class="block text-xs font-medium text-stone-700 mb-1.5">
+            Motif de résiliation <span class="text-red-500">*</span>
+          </label>
+          <textarea
+            [(ngModel)]="motifResiliation"
+            rows="4"
+            placeholder="Ex : déménagement, fin de contrat anticipée, non-paiement…"
+            class="w-full border border-stone-300 px-3 py-2 text-sm text-stone-800 placeholder-stone-400 focus:outline-none focus:border-amber-500 resize-none">
+          </textarea>
+          <p class="text-xs text-stone-400 mt-1">{{ motifResiliation.length }} / 500 caractères</p>
+        </div>
+
+      </div>
+
+      <!-- Footer confirmation -->
+      <div class="border-t border-stone-200 px-5 py-4 flex items-center gap-3 bg-stone-50 flex-shrink-0">
+        <button (click)="cancelResilier()"
+                [disabled]="isResiliant"
+                class="flex-1 py-2.5 border border-stone-300 text-stone-700 text-sm font-medium hover:bg-stone-100 transition-colors disabled:opacity-40">
+          Annuler
+        </button>
+        <button (click)="confirmResilier()"
+                [disabled]="isResiliant || !motifResiliation.trim()"
+                class="flex-1 py-2.5 bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
+          @if (isResiliant) {
+            <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin"></div>
+            Résiliation…
+          } @else {
+            Confirmer la résiliation
+          }
+        </button>
+      </div>
+    }
+
+    <!-- ── Vue détail principal ───────────────────────────── -->
+    @if (!isLoading && bail && view === 'detail') {
+      <div class="flex-1 overflow-y-auto">
+
+        <!-- Badge blockchain -->
+        <div [class]="'mx-5 mt-5 flex items-center gap-3 px-4 py-3 border '
+              + (blockchainBadge.color === 'green' ? 'bg-green-50 border-green-200'
+               : blockchainBadge.color === 'red'   ? 'bg-red-50 border-red-200'
+               :                                     'bg-amber-50 border-amber-200')">
+          <lucide-icon [img]="ShieldIcon"
+                       [class]="'w-4 h-4 flex-shrink-0 '
+                         + (blockchainBadge.color === 'green' ? 'text-green-600'
+                          : blockchainBadge.color === 'red'   ? 'text-red-600'
+                          :                                     'text-amber-600')">
+          </lucide-icon>
+          <div class="flex-1 min-w-0">
+            <p [class]="'text-xs font-medium '
+                  + (blockchainBadge.color === 'green' ? 'text-green-800'
+                   : blockchainBadge.color === 'red'   ? 'text-red-800'
+                   :                                     'text-amber-800')">
+              {{ blockchainBadge.label }}
+            </p>
+            @if (blockchainBadge.sub) {
+              <p [class]="'text-xs truncate mt-0.5 '
+                    + (blockchainBadge.color === 'green' ? 'text-green-600 font-mono'
+                     : 'text-red-500')">
+                {{ blockchainBadge.sub }}
+              </p>
+            }
+          </div>
+          @if (bail.tx_hash) {
+            <a [href]="'https://amoy.polygonscan.com/tx/' + bail.tx_hash" target="_blank"
+               class="flex items-center gap-1 text-xs text-green-700 hover:underline flex-shrink-0">
+              <lucide-icon [img]="ExternalIcon" class="w-3 h-3"></lucide-icon>
+              Vérifier
+            </a>
+          }
+        </div>
+
+        <div class="px-5 py-5 space-y-4">
+
+          <!-- Parties -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="border border-stone-200 p-3">
+              <div class="flex items-center gap-1.5 mb-2">
+                <lucide-icon [img]="UserIcon" class="w-3 h-3 text-stone-400"></lucide-icon>
+                <span class="text-xs font-medium text-stone-500 uppercase tracking-wide">Propriétaire</span>
+              </div>
+              <p class="text-sm font-medium text-stone-900">
+                {{ bail.proprietaire_info?.first_name }} {{ bail.proprietaire_info?.last_name }}
+              </p>
+              <p class="text-xs text-stone-400 mt-0.5 truncate">{{ bail.proprietaire_info?.email }}</p>
+            </div>
+            <div class="border border-stone-200 p-3">
+              <div class="flex items-center gap-1.5 mb-2">
+                <lucide-icon [img]="UserIcon" class="w-3 h-3 text-stone-400"></lucide-icon>
+                <span class="text-xs font-medium text-stone-500 uppercase tracking-wide">Locataire</span>
+              </div>
+              <p class="text-sm font-medium text-stone-900">
+                {{ bail.locataire_info?.first_name }} {{ bail.locataire_info?.last_name }}
+              </p>
+              <p class="text-xs text-stone-400 mt-0.5 truncate">{{ bail.locataire_info?.email }}</p>
+            </div>
+          </div>
+
+          <!-- Logement + statut -->
+          <div class="border border-stone-200 p-4">
+            <div class="flex items-center gap-2 mb-3">
+              <lucide-icon [img]="HomeIcon" class="w-3.5 h-3.5 text-stone-400"></lucide-icon>
+              <span class="text-xs font-medium text-stone-500 uppercase tracking-wide">Logement</span>
+            </div>
+            <p class="text-sm font-semibold text-amber-800">{{ bail.logement_info?.title }}</p>
+            <p class="text-xs text-stone-500 mt-0.5">{{ bail.logement_info?.city }}</p>
+            <div class="grid grid-cols-3 gap-3 mt-4">
+              <div>
+                <p class="text-xs text-stone-400">Type</p>
+                <p class="text-sm font-medium text-stone-800">
+                  {{ bail.type_bail === 'longue_duree' ? 'Longue durée'
+                  : bail.type_bail === 'courte_duree' ? 'Courte durée' : 'Achat' }}
+                </p>
+              </div>
+              <div>
+                <p class="text-xs text-stone-400">Loyer</p>
+                <p class="text-sm font-medium text-stone-800">{{ bail.prix_total | number }} FCFA</p>
+              </div>
+              <div>
+                <p class="text-xs text-stone-400">Statut</p>
+                <span [class]="'text-xs px-2 py-0.5 border inline-block ' + statutClass">
+                  {{ statutLabel }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dates -->
+          <div class="border border-stone-200 p-4">
+            <div class="flex items-center gap-2 mb-3">
+              <lucide-icon [img]="CalendarIcon" class="w-3.5 h-3.5 text-stone-400"></lucide-icon>
+              <span class="text-xs font-medium text-stone-500 uppercase tracking-wide">Période</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p class="text-xs text-stone-400">Début</p>
+                <p class="text-sm font-medium text-stone-800">{{ bail.date_debut | date:'dd/MM/yyyy' }}</p>
+              </div>
+              @if (bail.date_fin) {
+                <div>
+                  <p class="text-xs text-stone-400">Fin</p>
+                  <p class="text-sm font-medium text-stone-800">{{ bail.date_fin | date:'dd/MM/yyyy' }}</p>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Motif résiliation si résilié -->
+          @if (bail.statut === 'resilie' && bail.motif_resiliation) {
+            <div class="border border-red-200 bg-red-50 p-4">
+              <p class="text-xs font-medium text-red-700 uppercase tracking-wide mb-1">Motif de résiliation</p>
+              <p class="text-sm text-red-800">{{ bail.motif_resiliation }}</p>
+              @if (bail.date_resiliation) {
+                <p class="text-xs text-red-500 mt-1">Le {{ bail.date_resiliation | date:'dd/MM/yyyy à HH:mm' }}</p>
+              }
+            </div>
+          }
+
+          <!-- Signatures -->
+          <div class="border border-stone-200 p-4">
+            <p class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-3">Signatures</p>
+            <div class="flex items-center gap-8">
+              <div class="flex items-center gap-2">
+                <div [class]="bail.signe_proprietaire
+                      ? 'w-5 h-5 bg-green-500 flex items-center justify-center'
+                      : 'w-5 h-5 bg-stone-200 flex items-center justify-center'">
+                  @if (bail.signe_proprietaire) {
+                    <lucide-icon [img]="CheckIcon" class="w-3 h-3 text-white"></lucide-icon>
+                  }
+                </div>
+                <span class="text-sm text-stone-700">Propriétaire</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <div [class]="bail.signe_locataire
+                      ? 'w-5 h-5 bg-green-500 flex items-center justify-center'
+                      : 'w-5 h-5 bg-stone-200 flex items-center justify-center'">
+                  @if (bail.signe_locataire) {
+                    <lucide-icon [img]="CheckIcon" class="w-3 h-3 text-white"></lucide-icon>
+                  }
+                </div>
+                <span class="text-sm text-stone-700">Locataire</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- CTA Signer -->
+          @if (canSign) {
+            <div class="border-2 border-amber-300 bg-amber-50 p-4">
+              <p class="text-sm font-medium text-amber-900 mb-1">Votre signature est requise</p>
+              <p class="text-xs text-amber-700 mb-4">
+                En signant, vous acceptez les termes du contrat. La transaction sera enregistrée sur la blockchain.
+              </p>
+              <button (click)="sign()" [disabled]="isSigning"
+                      class="w-full py-2.5 bg-amber-800 text-white text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
+                @if (isSigning) {
+                  <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin"></div>
+                  Signature en cours…
+                } @else {
+                  Signer le contrat
+                }
+              </button>
+            </div>
+          }
+
+          <!-- Bail actif + signé -->
+          @if (bail.statut === 'actif' || bail.statut === 'signe') {
+            <div class="bg-green-50 border border-green-200 px-4 py-3 flex items-center gap-3">
+              <lucide-icon [img]="CheckIcon" class="w-4 h-4 text-green-600 flex-shrink-0"></lucide-icon>
+              <p class="text-sm text-green-800">Ce bail est signé par les deux parties et actif.</p>
+            </div>
+          }
+
+          <!-- Bail résilié -->
+          @if (bail.statut === 'resilie') {
+            <div class="bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-3">
+              <lucide-icon [img]="WarnIcon" class="w-4 h-4 text-red-600 flex-shrink-0"></lucide-icon>
+              <p class="text-sm text-red-800">Ce bail a été résilié.</p>
+            </div>
+          }
+
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="border-t border-stone-200 px-5 py-4 flex items-center justify-between bg-stone-50 flex-shrink-0">
+        <p class="text-xs text-stone-400">Bail #{{ bail.id }}</p>
+        <div class="flex gap-2">
+
+          <!-- Bouton résiliation (bail actif seulement) -->
+          @if (canResilier) {
+            <button (click)="openResilierConfirm()"
+                    class="flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 text-sm hover:bg-red-50 hover:border-red-400 transition-colors">
+              <lucide-icon [img]="WarnIcon" class="w-4 h-4"></lucide-icon>
+              Résilier
+            </button>
+          }
+
+          <!-- PDF -->
+          <button (click)="downloadPdf()"
+                  [disabled]="bail.statut === 'en_attente' || isDownloading"
+                  class="flex items-center gap-2 px-4 py-2 border border-stone-200 text-stone-600 text-sm hover:border-stone-400 hover:text-stone-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            @if (isDownloading) {
+              <div class="w-4 h-4 border-2 border-stone-400 border-t-transparent animate-spin"></div>
+              Génération…
+            } @else {
+              <lucide-icon [img]="DownloadIcon" class="w-4 h-4"></lucide-icon>
+              PDF
+            }
+          </button>
+
+          <button (click)="close.emit()"
+                  class="px-4 py-2 bg-stone-800 text-white text-sm hover:bg-stone-700 transition-colors">
+            Fermer
+          </button>
+        </div>
+      </div>
+    }
+
+  </div>
+</div>
