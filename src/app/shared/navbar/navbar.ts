@@ -1,6 +1,8 @@
-import { Component, Input, computed, signal,  } from '@angular/core';
-import { RouterLink, Router } from '@angular/router';
+// components/navbar/navbar.component.ts
+import { Component, Input, OnInit, OnDestroy, effect } from '@angular/core';
+import { RouterLink, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { Subscription, filter } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import {
   LucideAngularModule,
@@ -15,7 +17,7 @@ import {
   imports: [RouterLink, CommonModule, LucideAngularModule],
   templateUrl: './navbar.html',
 })
-export class NavbarComponent {
+export class NavbarComponent implements OnInit, OnDestroy {
   @Input() variant: 'public' | 'dashboard' = 'public';
   @Input() pageTitle = '';
 
@@ -35,20 +37,46 @@ export class NavbarComponent {
   readonly UserIcon      = User;
   readonly ChevronDown   = ChevronDown;
 
-  constructor(public authService: AuthService, private router: Router) {}
+  private routerSub?: Subscription;
 
+  constructor(public authService: AuthService, private router: Router) {
+    // Se déclenche à chaque changement du signal currentUser
+    effect(() => {
+      const user = this.authService.currentUser();
+    });
+  }
 
-  get currentUser() { return this.authService.currentUser(); }
+  ngOnInit() {
 
-  get role(): string       { return this.currentUser?.role ?? ''; }
-  get isProprietaire()     { return this.role === 'proprietaire'; }
-  get isLocataire()        { return this.role === 'locataire'; }
-  get isAdmin()            { return this.role === 'admin'; }
+    // Refresh à chaque changement de route
+    this.routerSub = this.router.events
+      .pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe((e) => {
+        console.log('[Navbar] NavigationEnd :', (e as NavigationEnd).url);
+        if (this.authService.isLoggedIn()) {
+          this.authService.refreshCurrentUser();
+        }
+      });
+  }
 
-  get proprietaireStatut() {
+  ngOnDestroy() {
+    this.routerSub?.unsubscribe();
+  }
+
+  get currentUser()    { return this.authService.currentUser(); }
+  get role(): string   { return this.currentUser?.role ?? ''; }
+  get isProprietaire() { return this.role === 'proprietaire'; }
+  get isLocataire()    { return this.role === 'locataire'; }
+  get isAdmin()        { return this.role === 'admin'; }
+
+  get proprietaireStatut(): string {
     return this.currentUser?.proprietaire_profile?.statut_verification ?? 'en_attente';
   }
-  get isVerified()         { return this.proprietaireStatut === 'valide'; }
+
+
+  get isVerified(): boolean {
+    return this.proprietaireStatut === 'verifie';
+  }
 
   get userInitials(): string {
     const u = this.currentUser;
@@ -66,7 +94,9 @@ export class NavbarComponent {
   }
 
   get userRoleLabel(): string {
-    return ({ proprietaire: 'Propriétaire', locataire: 'Locataire', admin: 'Administrateur' } as any)[this.role] ?? '';
+    return (
+      { proprietaire: 'Propriétaire', locataire: 'Locataire', admin: 'Administrateur' } as any
+    )[this.role] ?? '';
   }
 
   logout() {

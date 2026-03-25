@@ -1,11 +1,9 @@
-import {Injectable, signal} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
-import {Observable, tap} from 'rxjs';
-import {Router} from '@angular/router';
+import { Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, tap } from 'rxjs';
+import { Router } from '@angular/router';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class AuthService {
   private apiUrl = 'http://localhost:8000/api/auth';
   public currentUser = signal<any>(null);
@@ -23,20 +21,18 @@ export class AuthService {
       tap((res: any) => {
         if (res.tokens) {
           this.setTokens(res.tokens);
-          this.currentUser.set(res.user);
-          localStorage.setItem('user', JSON.stringify(res.user));
+          this.setUser(res.user);
         }
       })
     );
   }
 
   verifyMfa(mfa_token: string, code: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/mfa-verify/`, {mfa_token, code}).pipe(
+    return this.http.post(`${this.apiUrl}/mfa-verify/`, { mfa_token, code }).pipe(
       tap((res: any) => {
         if (res.tokens) {
           this.setTokens(res.tokens);
-          this.currentUser.set(res.user);
-          localStorage.setItem('user', JSON.stringify(res.user));
+          this.setUser(res.user);
         }
       })
     );
@@ -44,6 +40,18 @@ export class AuthService {
 
   getProfile(): Observable<any> {
     return this.http.get(`${this.apiUrl}/profile/`);
+  }
+
+  /**
+   * Recharge le profil complet depuis l'API et met à jour
+   * le signal + localStorage. Appelé par la navbar à chaque
+   * navigation pour refléter les changements de statut.
+   */
+  refreshCurrentUser(): void {
+    this.http.get(`${this.apiUrl}/profile/`).subscribe({
+      next: (user: any) => this.setUser(user),
+      error: () => { /* silencieux */ },
+    });
   }
 
   setTokens(tokens: { access: string; refresh: string }) {
@@ -70,39 +78,33 @@ export class AuthService {
     return !!this.getAccessToken();
   }
 
-  // Helper centralisé pour extraire le message d'erreur du format custom
   extractError(err: any): string {
     return err?.error?.error?.message || 'Une erreur est survenue.';
   }
 
   redirectByRole(user: any) {
     const role = user?.role;
-    if (role === 'proprietaire') {
-      this.router.navigate(['/dashboard']);
-    } else if (role === 'locataire') {
-      this.router.navigate(['/listings']);
-    } else if (role === 'admin') {
-      this.router.navigate(['/admin']);
-    } else {
-      this.router.navigate(['/']);
-    }
+    if (role === 'proprietaire')     this.router.navigate(['/dashboard']);
+    else if (role === 'locataire')   this.router.navigate(['/listings']);
+    else if (role === 'admin')       this.router.navigate(['/admin']);
+    else                             this.router.navigate(['/']);
   }
 
   getCurrentUser(): any {
-    return this.currentUser() || JSON.parse(localStorage.getItem('user') || 'null');
+    return this.currentUser() ?? JSON.parse(localStorage.getItem('user') || 'null');
+  }
+
+  // ── Privé ────────────────────────────────────────────────
+  private setUser(user: any) {
+    this.currentUser.set(user);
+    localStorage.setItem('user', JSON.stringify(user));
   }
 
   private loadUserFromStorage() {
     const raw = localStorage.getItem('user');
     if (raw) {
-      try {
-        const user = JSON.parse(raw);
-        this.currentUser.set(user);
-      } catch {
-        this.currentUser.set(null);
-      }
+      try { this.currentUser.set(JSON.parse(raw)); }
+      catch { this.currentUser.set(null); }
     }
   }
-
-
 }

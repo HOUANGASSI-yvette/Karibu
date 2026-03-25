@@ -36,6 +36,17 @@ export interface PropertyAmenity {
   name: string;
 }
 
+
+
+const FRENCH_TO_BACKEND: Record<string, string> = {
+  maison:      'house',
+  appartement: 'apartment',
+  chambre:     'studio',
+};
+
+export function normalizePropertyType(type: string): string {
+  return FRENCH_TO_BACKEND[type] ?? type;
+}
 // ── Modèle principal ──────────────────────────────────────
 // Accepte à la fois :
 //   - les réponses du backend Django (id: number, amenities: PropertyAmenity[], photos: PropertyPhoto[])

@@ -1,0 +1,361 @@
+<!-- edit-property-panel.component.html -->
+
+@if (isOpen()) {
+  <!-- Overlay -->
+  <div class="fixed inset-0 bg-black/30 z-40" (click)="close()"></div>
+
+  <!-- Drawer -->
+  <div class="fixed top-0 right-0 h-full w-full max-w-xl bg-white z-50 shadow-2xl flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-stone-200 flex-shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-1 h-6 bg-amber-800"></div>
+        <h2 class="text-base font-medium text-stone-900">Modifier le bien</h2>
+      </div>
+      <button (click)="close()"
+              class="w-8 h-8 flex items-center justify-center text-stone-400
+                     hover:text-stone-700 hover:bg-stone-100 transition-colors rounded">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Onglets -->
+    <div class="flex border-b border-stone-200 flex-shrink-0">
+      @for (tab of tabs; track tab.key) {
+        <button (click)="activeTab.set(tab.key)"
+                class="flex-1 py-3 text-sm font-medium transition-colors border-b-2"
+                [class]="activeTab() === tab.key
+                  ? 'border-amber-800 text-amber-800'
+                  : 'border-transparent text-stone-400 hover:text-stone-600'">
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    <!-- Contenu scrollable -->
+    <div class="flex-1 overflow-y-auto">
+
+      <!-- ── Onglet INFOS ─────────────────────────────── -->
+      @if (activeTab() === 'infos') {
+        <div class="px-6 py-5 space-y-5">
+
+          <!-- Titre -->
+          <div>
+            <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+              Titre de l'annonce <span class="text-red-400">*</span>
+            </label>
+            <input [(ngModel)]="form.title" type="text"
+                   placeholder="Ex : Appartement moderne à Bè"
+                   class="w-full border border-stone-200 px-3 py-2.5 text-sm text-stone-800
+                          focus:outline-none focus:border-amber-400 transition-colors" />
+          </div>
+
+          <!-- Type + Ville -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+                Type <span class="text-red-400">*</span>
+              </label>
+              <select [(ngModel)]="form.type"
+                      class="w-full border border-stone-200 px-3 py-2.5 text-sm text-stone-800
+                             focus:outline-none focus:border-amber-400 transition-colors bg-white">
+                <option value="">Choisir…</option>
+                @for (t of propertyTypes; track t[0]) {
+                  <option [value]="t[0]">{{ t[1] }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+                Ville <span class="text-red-400">*</span>
+              </label>
+              <select [(ngModel)]="form.city"
+                      class="w-full border border-stone-200 px-3 py-2.5 text-sm text-stone-800
+                             focus:outline-none focus:border-amber-400 transition-colors bg-white">
+                <option value="">Choisir…</option>
+                @for (c of cities; track c) {
+                  <option [value]="c">{{ c }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Quartier + Adresse -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+                Quartier <span class="text-red-400">*</span>
+              </label>
+              <input [(ngModel)]="form.district" type="text"
+                     placeholder="Ex : Adidogomé"
+                     class="w-full border border-stone-200 px-3 py-2.5 text-sm text-stone-800
+                            focus:outline-none focus:border-amber-400 transition-colors" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+                Adresse
+              </label>
+              <input [(ngModel)]="form.address" type="text"
+                     placeholder="Rue, numéro…"
+                     class="w-full border border-stone-200 px-3 py-2.5 text-sm text-stone-800
+                            focus:outline-none focus:border-amber-400 transition-colors" />
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+              Description <span class="text-red-400">*</span>
+            </label>
+            <textarea [(ngModel)]="form.description" rows="4"
+                      placeholder="Décrivez votre bien…"
+                      class="w-full border border-stone-200 px-3 py-2.5 text-sm text-stone-800
+                             resize-none focus:outline-none focus:border-amber-400 transition-colors">
+            </textarea>
+          </div>
+
+          <!-- Surface + Pièces -->
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+                Surface (m²) <span class="text-red-400">*</span>
+              </label>
+              <input [(ngModel)]="form.surface" type="number" min="5"
+                     class="w-full border border-stone-200 px-3 py-2.5 text-sm text-stone-800
+                            focus:outline-none focus:border-amber-400 transition-colors" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+                Pièces
+              </label>
+              <input [(ngModel)]="form.rooms" type="number" min="1"
+                     class="w-full border border-stone-200 px-3 py-2.5 text-sm text-stone-800
+                            focus:outline-none focus:border-amber-400 transition-colors" />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+                Chambres
+              </label>
+              <input [(ngModel)]="form.bedrooms" type="number" min="0"
+                     class="w-full border border-stone-200 px-3 py-2.5 text-sm text-stone-800
+                            focus:outline-none focus:border-amber-400 transition-colors" />
+            </div>
+          </div>
+
+          <!-- Équipements -->
+          <div>
+            <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">
+              Équipements
+            </label>
+            <div class="flex flex-wrap gap-2">
+              @for (a of availableAmenities; track a) {
+                <button type="button" (click)="toggleAmenity(a)"
+                        class="px-3 py-1.5 text-xs border transition-all duration-150"
+                        [class]="form.amenities.includes(a)
+                          ? 'bg-amber-800 text-white border-amber-800'
+                          : 'bg-white text-stone-600 border-stone-200 hover:border-amber-300'">
+                  {{ a }}
+                </button>
+              }
+            </div>
+          </div>
+
+        </div>
+      }
+
+      <!-- ── Onglet PHOTOS ────────────────────────────── -->
+      @if (activeTab() === 'photos') {
+        <div class="px-6 py-5 space-y-5">
+
+          <div class="flex items-center justify-between">
+            <p class="text-xs text-stone-500">
+              {{ totalPhotos }} / {{ MAX_PHOTOS }} photos
+            </p>
+            @if (photosToDelete.length > 0) {
+              <span class="text-xs text-red-500">{{ photosToDelete.length }} photo(s) à supprimer</span>
+            }
+          </div>
+
+          <!-- Photos existantes -->
+          @if (existingPhotos.length > 0) {
+            <div>
+              <p class="text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">Photos actuelles</p>
+              <div class="grid grid-cols-3 gap-2">
+                @for (photo of existingPhotos; track photo.id) {
+                  <div class="relative group aspect-square bg-stone-100 overflow-hidden border border-stone-200">
+                    <img [src]="photo.url" class="w-full h-full object-cover" alt="photo">
+                    <button (click)="markPhotoForDeletion(photo.id)"
+                            class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white
+                                   flex items-center justify-center opacity-0 group-hover:opacity-100
+                                   transition-opacity text-xs">
+                      ✕
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Nouvelles photos -->
+          @if (newPhotos.length > 0) {
+            <div>
+              <p class="text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">Nouvelles photos</p>
+              <div class="grid grid-cols-3 gap-2">
+                @for (photo of newPhotos; track photo.url; let i = $index) {
+                  <div class="relative group aspect-square bg-stone-100 overflow-hidden border border-amber-200">
+                    <img [src]="photo.url" class="w-full h-full object-cover" [alt]="photo.name">
+                    <button (click)="removeNewPhoto(i)"
+                            class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white
+                                   flex items-center justify-center opacity-0 group-hover:opacity-100
+                                   transition-opacity text-xs">
+                      ✕
+                    </button>
+                    <div class="absolute bottom-0 left-0 right-0 bg-black/50 px-1.5 py-0.5">
+                      <p class="text-white text-xs truncate">{{ photo.size }}</p>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Zone d'ajout -->
+          @if (totalPhotos < MAX_PHOTOS) {
+            <label class="block border-2 border-dashed border-stone-200 p-6 text-center
+                          cursor-pointer hover:border-amber-300 hover:bg-amber-50/50 transition-colors"
+                   (dragover)="$event.preventDefault()"
+                   (drop)="onDrop($event)">
+              <input type="file" multiple accept="image/*"
+                     class="hidden" (change)="onFileChange($event)">
+              <svg class="w-8 h-8 mx-auto mb-2 text-stone-300" fill="none" stroke="currentColor"
+                   viewBox="0 0 24 24" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775
+                         5.25 5.25 0 0110.338-2.32 5.75 5.75 0 011.187 11.096H6.75z" />
+              </svg>
+              <p class="text-sm text-stone-500">Glissez des photos ou <span class="text-amber-800 font-medium">parcourez</span></p>
+              <p class="text-xs text-stone-400 mt-1">JPG, PNG, WebP — max {{ MAX_SIZE_MB }} Mo</p>
+            </label>
+          }
+
+          @if (photoError) {
+            <p class="text-xs text-red-600 bg-red-50 border border-red-200 px-3 py-2">{{ photoError }}</p>
+          }
+
+        </div>
+      }
+
+      <!-- ── Onglet PRIX ──────────────────────────────── -->
+      @if (activeTab() === 'prix') {
+        <div class="px-6 py-5 space-y-5">
+
+          <!-- Loyer -->
+          <div>
+            <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+              Loyer mensuel (CFA) <span class="text-red-400">*</span>
+            </label>
+            <div class="relative">
+              <input [(ngModel)]="form.price" type="number" min="1000"
+                     class="w-full border border-stone-200 pl-3 pr-16 py-2.5 text-sm text-stone-800
+                            focus:outline-none focus:border-amber-400 transition-colors" />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400">CFA</span>
+            </div>
+            @if (form.price >= 1000) {
+              <p class="text-xs text-stone-400 mt-1">= {{ formatPrice(form.price) }} FCFA / mois</p>
+            }
+          </div>
+
+          <!-- Charges incluses -->
+          <label class="flex items-center gap-3 cursor-pointer group">
+            <div class="relative">
+              <input type="checkbox" [(ngModel)]="form.chargesIncluded" class="sr-only">
+              <div class="w-10 h-5 rounded-full transition-colors"
+                   [class]="form.chargesIncluded ? 'bg-amber-800' : 'bg-stone-200'">
+              </div>
+              <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
+                   [class.translate-x-5]="form.chargesIncluded">
+              </div>
+            </div>
+            <span class="text-sm text-stone-700 group-hover:text-stone-900 transition-colors">
+              Charges incluses dans le loyer
+            </span>
+          </label>
+
+          <!-- Disponibilité -->
+          <div class="border border-stone-200 p-4 space-y-3">
+            <p class="text-xs font-medium text-stone-500 uppercase tracking-wide">Disponibilité</p>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="radio" [value]="true" [(ngModel)]="form.available"
+                     class="accent-amber-800">
+              <span class="text-sm text-stone-700">Disponible immédiatement</span>
+            </label>
+
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="radio" [value]="false" [(ngModel)]="form.available"
+                     class="accent-amber-800">
+              <span class="text-sm text-stone-700">Disponible à partir du</span>
+            </label>
+
+            @if (!form.available) {
+              <input [(ngModel)]="form.availableFrom" type="date"
+                     class="w-full border border-stone-200 px-3 py-2 text-sm text-stone-800
+                            focus:outline-none focus:border-amber-400 transition-colors" />
+            }
+          </div>
+
+          <!-- Salle de bains (bonus ici) -->
+          <div>
+            <label class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-1.5">
+              Salles de bains
+            </label>
+            <input [(ngModel)]="form.bathrooms" type="number" min="0"
+                   class="w-full border border-stone-200 px-3 py-2.5 text-sm text-stone-800
+                          focus:outline-none focus:border-amber-400 transition-colors" />
+          </div>
+
+        </div>
+      }
+
+    </div>
+
+    <!-- Footer actions -->
+    <div class="border-t border-stone-200 px-6 py-4 flex-shrink-0 space-y-3">
+
+      @if (errorMsg()) {
+        <div class="flex items-center gap-2 bg-red-50 border border-red-200 px-4 py-2.5">
+          <div class="w-4 h-4 bg-red-500 flex items-center justify-center shrink-0">
+            <span class="text-white text-xs font-bold">!</span>
+          </div>
+          <p class="text-sm text-red-700">{{ errorMsg() }}</p>
+        </div>
+      }
+
+      <div class="flex gap-3">
+        <button (click)="close()" type="button"
+                class="px-5 py-2.5 border border-stone-200 text-stone-600 text-sm
+                       hover:bg-stone-50 hover:border-stone-300 transition-all">
+          Annuler
+        </button>
+        <button (click)="onSave()" type="button" [disabled]="isSaving()"
+                class="flex-1 py-2.5 bg-amber-800 text-white font-medium text-sm
+                       hover:bg-amber-700 transition-all disabled:opacity-60
+                       disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          @if (isSaving()) {
+            <div class="w-4 h-4 border-2 border-white border-t-transparent animate-spin"></div>
+            <span>Enregistrement…</span>
+          } @else {
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path d="M5 13l4 4L19 7"/>
+            </svg>
+            <span>Enregistrer les modifications</span>
+          }
+        </button>
+      </div>
+
+    </div>
+  </div>
+}

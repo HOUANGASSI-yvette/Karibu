@@ -1,6 +1,5 @@
 <div class="min-h-screen bg-stone-100 flex flex-col">
 
-  <!-- Navbar reçoit les données user et émet logout -->
   <app-dashboard-navbar
     [userInitials]="userInitials"
     [userName]="userName"
@@ -12,73 +11,68 @@
 
     <app-dashboard-sidebar
       [activeSection]="activeSection"
-      [propertiesCount]="properties.length"
-      [tenantsCount]="tenants.length"
-      [unreadCount]="unreadCount"
-      [pendingCount]="pendingCount"
+      [propertiesCount]="sidebarPropertiesCount"
+      [tenantsCount]="sidebarTenantsCount"
+      [unreadCount]="sidebarUnreadCount"
+      [pendingCount]="sidebarPendingCount"
       [isAdmin]="authService.getCurrentUser()?.role === 'admin'"
       (sectionChange)="onSectionChange($event)">
     </app-dashboard-sidebar>
 
     <main class="flex-1 p-4 lg:p-8 overflow-auto">
 
-      @if (isLoading) {
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8 animate-pulse">
-          @for (i of [1,2,3,4]; track i) {
-            <div class="h-24 bg-white border border-stone-200"></div>
-          }
-        </div>
-        <div class="grid lg:grid-cols-2 gap-6 animate-pulse">
-          <div class="h-64 bg-white border border-stone-200"></div>
-          <div class="h-64 bg-white border border-stone-200"></div>
-        </div>
+      @if (activeSection === 'overview') {
+        <app-overview-section
+          [stats]="stats"
+          [properties]="properties"
+          [payments]="payments"
+          [unreadCount]="unreadCount"
+          [pendingCount]="pendingCount"
+          (sectionChange)="onSectionChange($event)">
+        </app-overview-section>
       }
 
-      @if (!isLoading) {
-        @if (activeSection === 'overview') {
-          <app-overview-section
-            [stats]="stats"
-            [properties]="properties"
-            [payments]="payments"
-            [unreadCount]="unreadCount"
-            [pendingCount]="pendingCount"
-            (sectionChange)="onSectionChange($event)">
-          </app-overview-section>
-        }
-        @if (activeSection === 'properties') {
-          <app-properties-section [properties]="properties"></app-properties-section>
-        }
-        @if (activeSection === 'tenants') {
-          <app-tenants-section
-            [tenants]="tenants"
-            (sectionChange)="onSectionChange($event)">
-          </app-tenants-section>
-        }
-        @if (activeSection === 'payments') {
-          <app-payments-section
-            [payments]="payments"
-            (quittanceDownload)="onQuittanceDownload($event)">
-          </app-payments-section>
-        }
-        @if (activeSection === 'messages') {
-          <app-messages-section
-            [messages]="messages"
-            (messageRead)="onMessageRead($event)">
-          </app-messages-section>
-        }
-        @if (activeSection === 'requests') {
-          <app-requests-section
-            [requests]="requests"
-            (requestHandled)="onRequestHandled($event)">
-          </app-requests-section>
-        }
-        @if (activeSection === 'admin-users') {
-          <app-admin-users-section></app-admin-users-section>
-        }
-        @if (activeSection === 'admin-documents') {
-          <app-admin-documents-section></app-admin-documents-section>
-        }
+      @if (activeSection === 'properties') {
+        <app-properties-section
+          (countChange)="onPropertiesCountChange($event)">
+        </app-properties-section>
+      }
 
+      @if (activeSection === 'tenants') {
+        <!-- tenants-section charge ses propres données -->
+        <app-tenants-section
+          [tenants]="[]"
+          (sectionChange)="onSectionChange($event)">
+        </app-tenants-section>
+      }
+
+      @if (activeSection === 'payments') {
+        <!-- payments-section charge ses propres données -->
+        <app-payments-section
+          [payments]="[]"
+          (quittanceDownload)="onQuittanceDownload($event)">
+        </app-payments-section>
+      }
+
+      @if (activeSection === 'messages') {
+        <!-- messages-section charge ses propres données -->
+        <app-messages-section>
+        </app-messages-section>
+      }
+
+      @if (activeSection === 'requests') {
+        <!-- requests-section charge ses propres données via API -->
+        <app-requests-section
+          (requestHandled)="onRequestHandled($event)">
+        </app-requests-section>
+      }
+
+      @if (activeSection === 'admin-users') {
+        <app-admin-users-section></app-admin-users-section>
+      }
+
+      @if (activeSection === 'admin-documents') {
+        <app-admin-documents-section></app-admin-documents-section>
       }
 
     </main>

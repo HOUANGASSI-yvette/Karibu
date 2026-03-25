@@ -209,6 +209,8 @@ export class PublishPropertyComponent implements OnDestroy {
       availableFrom:   this.form.availableFrom || undefined,
     };
 
+
+
     this.propertyService
       .create(payload as any, this.photos.map(p => p.file))
       .subscribe({
@@ -220,6 +222,7 @@ export class PublishPropertyComponent implements OnDestroy {
           this.isSubmitting = false;
           const detail = err?.error?.detail ?? err?.error?.non_field_errors?.[0];
           this.errorMessage = detail ?? 'Une erreur est survenue lors de la publication.';
+          console.error('DRF error detail:', JSON.stringify(err.error, null, 2));
         },
       });
   }

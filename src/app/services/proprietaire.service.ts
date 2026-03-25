@@ -37,7 +37,7 @@ export interface ProprietaireProfil {
 
 @Injectable({ providedIn: 'root' })
 export class ProprietaireService {
-  private readonly BASE = `${environment.apiUrl}/proprietaires`;
+  private readonly BASE = `${environment.apiUrl}/proprietaire`;
 
   isLoading = signal(false);
 
