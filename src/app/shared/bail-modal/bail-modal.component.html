@@ -1,5 +1,15 @@
-<!-- Overlay -->
-<div class="fixed inset-0 z-50 flex justify-end" (click)="onOverlayClick($event)">
+<!-- ✅ Drawer de paiement — monté par-dessus le modal bail (z-index supérieur) -->
+@if (showPaymentDrawer && bail) {
+  <app-payment-drawer
+    [bailId]="bail.id"
+    [prixLoyer]="bail.prix_total"
+    [isProprietaire]="isProprietaireOwner"
+    (close)="closePayment()">
+  </app-payment-drawer>
+}
+
+<!-- Overlay bail modal -->
+<div class="fixed inset-0 z-30 flex justify-end" (click)="onOverlayClick($event)">
   <div class="absolute inset-0 bg-stone-900/40"></div>
 
   <!-- Drawer -->
@@ -23,7 +33,7 @@
       </button>
     </div>
 
-    <!-- ── Skeleton ───────────────────────────────────────── -->
+    <!-- ── Skeleton ── -->
     @if (isLoading) {
       <div class="flex-1 overflow-y-auto p-5 space-y-4 animate-pulse">
         <div class="h-12 bg-stone-100 border border-stone-200"></div>
@@ -37,7 +47,7 @@
       </div>
     }
 
-    <!-- ── Erreur chargement ──────────────────────────────── -->
+    <!-- ── Erreur ── -->
     @if (!isLoading && !bail) {
       <div class="flex-1 flex items-center justify-center">
         <div class="text-center space-y-2">
@@ -51,11 +61,9 @@
       </div>
     }
 
-    <!-- ── Vue confirmation résiliation ─────────────────────── -->
+    <!-- ── Vue confirmation résiliation ── -->
     @if (!isLoading && bail && view === 'confirm_resilier') {
       <div class="flex-1 overflow-y-auto p-5 space-y-4">
-
-        <!-- Avertissement -->
         <div class="flex items-start gap-3 bg-red-50 border border-red-200 px-4 py-4">
           <lucide-icon [img]="WarnIcon" class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5"></lucide-icon>
           <div>
@@ -66,7 +74,6 @@
           </div>
         </div>
 
-        <!-- Récap bail -->
         <div class="border border-stone-200 p-4 space-y-1">
           <p class="text-sm font-semibold text-stone-800">{{ bail.logement_info?.title }}</p>
           <p class="text-xs text-stone-500">{{ bail.logement_info?.city }}</p>
@@ -76,7 +83,6 @@
           </p>
         </div>
 
-        <!-- Motif -->
         <div>
           <label class="block text-xs font-medium text-stone-700 mb-1.5">
             Motif de résiliation <span class="text-red-500">*</span>
@@ -89,18 +95,14 @@
           </textarea>
           <p class="text-xs text-stone-400 mt-1">{{ motifResiliation.length }} / 500 caractères</p>
         </div>
-
       </div>
 
-      <!-- Footer confirmation -->
       <div class="border-t border-stone-200 px-5 py-4 flex items-center gap-3 bg-stone-50 flex-shrink-0">
-        <button (click)="cancelResilier()"
-                [disabled]="isResiliant"
+        <button (click)="cancelResilier()" [disabled]="isResiliant"
                 class="flex-1 py-2.5 border border-stone-300 text-stone-700 text-sm font-medium hover:bg-stone-100 transition-colors disabled:opacity-40">
           Annuler
         </button>
-        <button (click)="confirmResilier()"
-                [disabled]="isResiliant || !motifResiliation.trim()"
+        <button (click)="confirmResilier()" [disabled]="isResiliant || !motifResiliation.trim()"
                 class="flex-1 py-2.5 bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
           @if (isResiliant) {
             <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin"></div>
@@ -112,7 +114,7 @@
       </div>
     }
 
-    <!-- ── Vue détail principal ───────────────────────────── -->
+    <!-- ── Vue détail principal ── -->
     @if (!isLoading && bail && view === 'detail') {
       <div class="flex-1 overflow-y-auto">
 
@@ -136,8 +138,7 @@
             </p>
             @if (blockchainBadge.sub) {
               <p [class]="'text-xs truncate mt-0.5 '
-                    + (blockchainBadge.color === 'green' ? 'text-green-600 font-mono'
-                     : 'text-red-500')">
+                    + (blockchainBadge.color === 'green' ? 'text-green-600 font-mono' : 'text-red-500')">
                 {{ blockchainBadge.sub }}
               </p>
             }
@@ -150,6 +151,29 @@
             </a>
           }
         </div>
+
+        <!-- ✅ Bannière paiement — visible uniquement pour le locataire sur bail actif/signé -->
+        @if (canPay) {
+          <div class="mx-5 mt-4 flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 px-4 py-3">
+            <div class="flex items-center gap-2.5">
+              <lucide-icon [img]="PayIcon" class="w-4 h-4 text-amber-700 flex-shrink-0"></lucide-icon>
+              <div>
+                <p class="text-sm font-medium text-amber-900">Paiement disponible</p>
+                <p class="text-xs text-amber-700 mt-0.5">
+                  {{ bail.prix_total | number }} FCFA ·
+                  {{ bail.type_bail === 'longue_duree' ? 'mensuel'
+                  : bail.type_bail === 'courte_duree' ? 'séjour'
+                    : 'versement' }}
+                </p>
+              </div>
+            </div>
+            <button (click)="openPayment()"
+                    class="flex items-center gap-1.5 px-4 py-2 bg-amber-800 text-white text-sm font-medium hover:bg-amber-700 transition-colors flex-shrink-0">
+              <lucide-icon [img]="PayIcon" class="w-3.5 h-3.5"></lucide-icon>
+              {{ paymentLabel }}
+            </button>
+          </div>
+        }
 
         <div class="px-5 py-5 space-y-4">
 
@@ -190,11 +214,11 @@
                 <p class="text-xs text-stone-400">Type</p>
                 <p class="text-sm font-medium text-stone-800">
                   {{ bail.type_bail === 'longue_duree' ? 'Longue durée'
-                  : bail.type_bail === 'courte_duree' ? 'Courte durée' : 'Achat' }}
+                  : bail.type_bail === 'courte_duree'  ? 'Courte durée' : 'Achat' }}
                 </p>
               </div>
               <div>
-                <p class="text-xs text-stone-400">Loyer</p>
+                <p class="text-xs text-stone-400">Montant</p>
                 <p class="text-sm font-medium text-stone-800">{{ bail.prix_total | number }} FCFA</p>
               </div>
               <div>
@@ -226,7 +250,7 @@
             </div>
           </div>
 
-          <!-- Motif résiliation si résilié -->
+          <!-- Motif résiliation -->
           @if (bail.statut === 'resilie' && bail.motif_resiliation) {
             <div class="border border-red-200 bg-red-50 p-4">
               <p class="text-xs font-medium text-red-700 uppercase tracking-wide mb-1">Motif de résiliation</p>
@@ -305,9 +329,18 @@
       <!-- Footer -->
       <div class="border-t border-stone-200 px-5 py-4 flex items-center justify-between bg-stone-50 flex-shrink-0">
         <p class="text-xs text-stone-400">Bail #{{ bail.id }}</p>
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap justify-end">
 
-          <!-- Bouton résiliation (bail actif seulement) -->
+          <!-- ✅ Bouton paiement dans le footer aussi (locataire uniquement) -->
+          @if (canPay) {
+            <button (click)="openPayment()"
+                    class="flex items-center gap-1.5 px-4 py-2 bg-amber-800 text-white text-sm font-medium hover:bg-amber-700 transition-colors">
+              <lucide-icon [img]="PayIcon" class="w-4 h-4"></lucide-icon>
+              {{ paymentLabel }}
+            </button>
+          }
+
+          <!-- Résiliation -->
           @if (canResilier) {
             <button (click)="openResilierConfirm()"
                     class="flex items-center gap-2 px-4 py-2 border border-red-200 text-red-600 text-sm hover:bg-red-50 hover:border-red-400 transition-colors">

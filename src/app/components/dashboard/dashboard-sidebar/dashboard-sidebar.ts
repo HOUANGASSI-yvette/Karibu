@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 
 export type DashboardSection =
   | 'overview' | 'properties' | 'tenants' | 'payments' | 'messages' | 'requests'
-  | 'admin-users' | 'admin-documents' | 'admin-proprietaires';
+  | 'admin-users' | 'admin-documents' | 'admin-proprietaires' |  'admin-disputes';
 
 
 @Component({

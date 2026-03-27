@@ -13,6 +13,7 @@ import { MessagesSectionComponent } from './sections/messages-section/messages-s
 import { RequestsSectionComponent } from './sections/requests-section/requests-section';
 import { AdminUsersSectionComponent } from './sections/admin-users-section/admin-users-section';
 import { AdminDocumentsSectionComponent } from './sections/admin-documents-section/admin-documents-section';
+import { AdminDisputesSectionComponent } from './sections/admin-disputes-section/admin-disputes-section';
 
 export interface OwnerStats {
   totalRevenue: number; revenueEvolution: number;
@@ -53,6 +54,7 @@ export interface DashboardMessage {
     RequestsSectionComponent,
     AdminUsersSectionComponent,
     AdminDocumentsSectionComponent,
+    AdminDisputesSectionComponent
   ],
   templateUrl: './dashboard.html',
 })

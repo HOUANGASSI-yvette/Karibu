@@ -7,19 +7,20 @@ import { FormsModule } from '@angular/forms';
 import {
   LucideAngularModule,
   X, FileText, CheckCircle, Download, ExternalLink,
-  Shield, Calendar, User, Home, AlertCircle, AlertTriangle, Loader
+  Shield, Calendar, User, Home, AlertCircle, AlertTriangle, Loader, CreditCard
 } from 'lucide-angular';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BailService, BailDetail } from '../../services/bail.service';
 import { ToastService } from '../toast.service';
 import { AuthService } from '../../services/auth.service';
+import { PaymentDrawerComponent } from '../../components/payments/payments';
 
 type ModalView = 'detail' | 'confirm_resilier';
 
 @Component({
   selector: 'app-bail-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [CommonModule, FormsModule, LucideAngularModule, PaymentDrawerComponent],
   templateUrl: './bail-modal.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -41,6 +42,7 @@ export class BailModalComponent implements OnInit {
   readonly AlertIcon    = AlertCircle;
   readonly WarnIcon     = AlertTriangle;
   readonly LoaderIcon   = Loader;
+  readonly PayIcon      = CreditCard;   // ✅ icône paiement
 
   bail:         BailDetail | null = null;
   isLoading     = true;
@@ -48,9 +50,11 @@ export class BailModalComponent implements OnInit {
   isDownloading = false;
   isResiliant   = false;
 
-  // Vue interne : detail | confirm_resilier
   view: ModalView = 'detail';
   motifResiliation = '';
+
+  // ✅ Contrôle l'affichage du drawer de paiement
+  showPaymentDrawer = false;
 
   private destroyRef = inject(DestroyRef);
 
@@ -94,6 +98,14 @@ export class BailModalComponent implements OnInit {
     return this.authService.getCurrentUser()?.id;
   }
 
+  get isLocataire(): boolean {
+    return this.currentUserId === this.bail?.locataire;
+  }
+
+  get isProprietaireOwner(): boolean {
+    return this.currentUserId === this.bail?.proprietaire;
+  }
+
   get canSign(): boolean {
     if (!this.bail || this.bail.statut !== 'en_attente') return false;
     const uid = this.currentUserId;
@@ -102,12 +114,33 @@ export class BailModalComponent implements OnInit {
     return false;
   }
 
-  // Résiliation possible uniquement si bail actif, par propriétaire ou locataire
   get canResilier(): boolean {
     if (!this.bail) return false;
     if (this.bail.statut !== 'actif') return false;
     const uid = this.currentUserId;
     return uid === this.bail.proprietaire || uid === this.bail.locataire;
+  }
+
+  // ✅ Le paiement est possible si :
+  // - le bail est actif ou signé
+  // - l'utilisateur est le locataire (c'est lui qui paie)
+  get canPay(): boolean {
+    if (!this.bail) return false;
+    return (
+      (this.bail.statut === 'actif' || this.bail.statut === 'signe') &&
+      this.isLocataire
+    );
+  }
+
+  // ✅ Label du bouton selon le type de bail
+  get paymentLabel(): string {
+    if (!this.bail) return 'Payer';
+    const map: Record<string, string> = {
+      longue_duree: 'Payer le loyer',
+      courte_duree: 'Régler la location',
+      achat:        'Effectuer un versement',
+    };
+    return map[this.bail.type_bail] ?? 'Payer';
   }
 
   get blockchainBadge(): { label: string; sub: string; color: 'green' | 'red' | 'amber' } {
@@ -237,6 +270,18 @@ export class BailModalComponent implements OnInit {
           this.toast.error('Erreur lors du téléchargement du PDF.');
         }
       });
+  }
+
+  // ✅ Ouvrir / fermer le drawer de paiement
+  openPayment() {
+    this.showPaymentDrawer = true;
+    this.cdr.markForCheck();
+  }
+
+  closePayment() {
+    this.showPaymentDrawer = false;
+    // Recharge le bail pour refléter les éventuels changements de statut
+    this.reload();
   }
 
   onOverlayClick(e: MouseEvent) {

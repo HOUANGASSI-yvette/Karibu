@@ -1,9 +1,9 @@
-// components/navbar/navbar.component.ts
-import { Component, Input, OnInit, OnDestroy, effect } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, ChangeDetectorRef, effect } from '@angular/core';
 import { RouterLink, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Subscription, filter } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 import {
   LucideAngularModule,
   Bell, LogOut, Menu, X,
@@ -39,28 +39,43 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   private routerSub?: Subscription;
 
-  constructor(public authService: AuthService, private router: Router) {
-    // Se déclenche à chaque changement du signal currentUser
+  constructor(
+    public  authService: AuthService,
+    public  notificationService: NotificationService,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+  ) {
     effect(() => {
-      const user = this.authService.currentUser();
+      this.authService.currentUser();
+      this.cdr.detectChanges();
+    });
+
+    // Réagit aux changements du compteur de notifs non lues
+    effect(() => {
+      this.notificationService.unreadCount();
+      this.cdr.detectChanges();
     });
   }
 
   ngOnInit() {
-
-    // Refresh à chaque changement de route
     this.routerSub = this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
-      .subscribe((e) => {
-        console.log('[Navbar] NavigationEnd :', (e as NavigationEnd).url);
+      .subscribe(() => {
         if (this.authService.isLoggedIn()) {
           this.authService.refreshCurrentUser();
         }
       });
+
+    // Charger le compte de notifs non lues au démarrage
+    if (this.authService.isLoggedIn()) {
+      this.notificationService.getNotifications().subscribe();
+      this.notificationService.connectNotifications();
+    }
   }
 
   ngOnDestroy() {
     this.routerSub?.unsubscribe();
+    this.notificationService.disconnectNotifications();
   }
 
   get currentUser()    { return this.authService.currentUser(); }
@@ -73,9 +88,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
     return this.currentUser?.proprietaire_profile?.statut_verification ?? 'en_attente';
   }
 
-
   get isVerified(): boolean {
     return this.proprietaireStatut === 'verifie';
+  }
+
+  get unreadNotifCount(): number {
+    return this.notificationService.unreadCount();
   }
 
   get userInitials(): string {
@@ -101,6 +119,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
   logout() {
     this.authService.clearTokens();
+    this.notificationService.disconnectNotifications();
     this.router.navigate(['/login']);
   }
 

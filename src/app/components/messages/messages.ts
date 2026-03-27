@@ -8,7 +8,11 @@ import { NavbarComponent } from '../../shared/navbar/navbar';
 import { ChatService, ChatRoom, ChatMessage } from '../../services/chat.service';
 import { ToastService } from '../../shared/toast.service';
 import { Subscription } from 'rxjs';
-import { LucideAngularModule, Send, Search, WifiOff, RefreshCw, FileText, ChevronRight } from 'lucide-angular';
+import {
+  LucideAngularModule,
+  Send, Search, WifiOff, RefreshCw, FileText,
+  ChevronRight, ChevronDown, Home, X
+} from 'lucide-angular';
 import { ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
@@ -30,34 +34,40 @@ export interface RoomRequest {
   styleUrl: './messages.css',
 })
 export class MessagesComponent implements OnInit, OnDestroy {
-  @ViewChild('messagesEnd')      messagesEnd!: ElementRef;
+  @ViewChild('messagesEnd')       messagesEnd!: ElementRef;
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
 
-  readonly SendIcon    = Send;
-  readonly SearchIcon  = Search;
-  readonly OfflineIcon = WifiOff;
-  readonly RetryIcon   = RefreshCw;
-  readonly FileIcon    = FileText;
-  readonly ChevronIcon = ChevronRight;
+  readonly SendIcon        = Send;
+  readonly SearchIcon      = Search;
+  readonly OfflineIcon     = WifiOff;
+  readonly RetryIcon       = RefreshCw;
+  readonly FileIcon        = FileText;
+  readonly ChevronIcon     = ChevronRight;
+  readonly ChevronDownIcon = ChevronDown;
+  readonly HomeIcon        = Home;
+  readonly XIcon           = X;
 
-  rooms: ChatRoom[] = [];
-  messages: ChatMessage[] = [];
+  rooms:        ChatRoom[]    = [];
+  messages:     ChatMessage[] = [];
   selectedRoom: ChatRoom | null = null;
-  newMessage = '';
+  newMessage    = '';
   isLoadingRooms = true;
   isLoadingMsgs  = false;
   hasError       = false;
   searchQuery    = '';
   isMobile       = window.innerWidth <= 640;
 
-  roomRequest: RoomRequest | null = null;
+  roomRequests:    RoomRequest[]    = [];
+  selectedContext: RoomRequest | null = null;
+  logementsOpen    = false;
+
   selectedBailId: number | null = null;
 
   private sub?: Subscription;
   private routeSub?: Subscription;
 
   constructor(
-    public chatService: ChatService,
+    public  chatService: ChatService,
     private toast: ToastService,
     private route: ActivatedRoute,
     private http: HttpClient,
@@ -75,14 +85,12 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     this.sub = this.chatService.newMessage$.subscribe(msg => {
       if (!this.selectedRoom) return;
-      const alreadyPresent = this.messages.some(m => m.id === msg.id);
-      if (!alreadyPresent) {
-        this.messages = [...this.messages, msg];
-        this.cdr.detectChanges();
-        this.scrollToBottom();
-        if (msg.sender !== this.currentUserId) {
-          this.markRoomAsRead(this.selectedRoom.id, [msg.id]);
-        }
+      if (this.messages.some(m => m.id === msg.id)) return;
+      this.messages = [...this.messages, msg];
+      this.cdr.detectChanges();
+      this.scrollToBottom();
+      if (msg.sender !== this.currentUserId) {
+        this.markRoomAsRead(this.selectedRoom.id, [msg.id]);
       }
     });
 
@@ -108,7 +116,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
         this.selectRoom(existing);
       } else {
         this.http.get<ChatRoom>(`${environment.apiUrl}/chats/${roomId}/`).subscribe({
-          next: (room) => {
+          next: room => {
             if (!this.rooms.find(r => r.id === room.id)) this.rooms = [room, ...this.rooms];
             this.selectRoom(room);
             this.cdr.detectChanges();
@@ -117,12 +125,12 @@ export class MessagesComponent implements OnInit, OnDestroy {
         });
       }
     } else if (userId) {
-      const existingByUser = this.rooms.find(r => String(r.other_user_id) === String(userId));
-      if (existingByUser) {
-        this.selectRoom(existingByUser);
+      const existing = this.rooms.find(r => String(r.other_user_id) === String(userId));
+      if (existing) {
+        this.selectRoom(existing);
       } else {
         this.chatService.getOrCreateRoom(Number(userId)).subscribe({
-          next: (room) => {
+          next: room => {
             if (!this.rooms.find(r => r.id === room.id)) this.rooms = [room, ...this.rooms];
             this.selectRoom(room);
             this.cdr.detectChanges();
@@ -137,7 +145,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.isLoadingRooms = true;
     this.hasError = false;
     this.chatService.getRooms().subscribe({
-      next: (rooms) => {
+      next: rooms => {
         this.rooms = rooms;
         this.isLoadingRooms = false;
         this.cdr.detectChanges();
@@ -153,17 +161,19 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   selectRoom(room: ChatRoom) {
-    this.selectedRoom = room;
-    this.roomRequest  = null;
-    this.isLoadingMsgs = true;
-    this.messages = [];
+    this.selectedRoom    = room;
+    this.roomRequests    = [];
+    this.selectedContext = null;
+    this.logementsOpen   = false;
+    this.isLoadingMsgs   = true;
+    this.messages        = [];
     this.cdr.detectChanges();
 
     this.chatService.connectToRoom(room.id);
 
     this.chatService.getMessages(room.id).subscribe({
-      next: (msgs) => {
-        this.messages = msgs;
+      next: msgs => {
+        this.messages      = msgs;
         this.isLoadingMsgs = false;
         this.cdr.detectChanges();
         this.scrollToBottom();
@@ -171,7 +181,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
         const unreadIds = msgs
           .filter(m => !m.is_read && m.sender !== this.currentUserId)
           .map(m => m.id);
-        if (unreadIds.length > 0) this.markRoomAsRead(room.id, unreadIds);
+        if (unreadIds.length) this.markRoomAsRead(room.id, unreadIds);
       },
       error: () => {
         this.isLoadingMsgs = false;
@@ -183,16 +193,97 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.http.get<RoomRequest[]>(
       `${environment.apiUrl}/reservations/?other_user=${room.other_user_id}`
     ).subscribe({
-      next: (reqs) => {
-        if (reqs?.length) { this.roomRequest = reqs[0]; this.cdr.detectChanges(); }
+      next: reqs => {
+        if (reqs?.length) {
+          this.roomRequests = reqs;
+          if (reqs.length === 1) this.selectedContext = reqs[0];
+        }
+        this.cdr.detectChanges();
       },
       error: () => {}
     });
   }
 
+  toggleLogements() {
+    this.logementsOpen = !this.logementsOpen;
+    this.cdr.detectChanges();
+  }
+
+  selectContext(req: RoomRequest | null) {
+    this.selectedContext = req;
+    this.logementsOpen   = false;
+    this.cdr.detectChanges();
+  }
+
+  sendMessage() {
+    if (!this.newMessage.trim() || !this.selectedRoom) return;
+    const content = this.newMessage.trim();
+    this.newMessage = '';
+
+    setTimeout(() => {
+      const ta = document.querySelector('.chat-textarea') as HTMLTextAreaElement;
+      if (ta) ta.style.height = 'auto';
+    }, 0);
+
+    const ctx = this.selectedContext ? {
+      context_type:     this.selectedContext.status === 'accepted' ? 'bail_signed' : 'reservation_request',
+      context_property: this.selectedContext.property_title,
+      context_bail_id:  this.selectedContext.bail_id ?? undefined,
+      context_source:   'Depuis : section Demandes',
+    } : undefined;
+
+    const sent = this.chatService.sendMessageWs(content, ctx);
+    if (!sent) {
+      this.chatService.sendMessageHttp(this.selectedRoom.id, content, ctx).subscribe({
+        next: msg => {
+          this.messages = [...this.messages, msg];
+          this.cdr.detectChanges();
+          this.scrollToBottom();
+        },
+        error: () => this.toast.error("Impossible d'envoyer le message.")
+      });
+    }
+  }
+
+  sendOnEnter(event: KeyboardEvent) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.sendMessage();
+    }
+  }
+
+  autoResize(event: Event) {
+    const ta = event.target as HTMLTextAreaElement;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  }
+
+  /**
+   * Affiche un séparateur de contexte quand le context_property change
+   * par rapport au message précédent.
+   * - Index 0 : séparateur seulement si le message a un contexte (pas pour les msgs généraux sans contexte)
+   * - Autres : séparateur si le contexte change (incluant null → valeur ou valeur → null)
+   */
+  shouldShowContextSeparator(msg: ChatMessage, index: number): boolean {
+    const curCtx = msg.context_property ?? null;
+
+    if (index === 0) {
+      // Premier message : séparateur uniquement si il a un contexte défini
+      return curCtx !== null;
+    }
+
+    const prev = this.messages[index - 1];
+    const prevCtx = prev?.context_property ?? null;
+
+    // Affiche séparateur seulement si le contexte change
+    return prevCtx !== curCtx;
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
   private markRoomAsRead(roomId: number, messageIds: number[]) {
     const room = this.rooms.find(r => r.id === roomId);
-    if (room && room.unread_count > 0) {
+    if (room?.unread_count) {
       room.unread_count = 0;
       this.rooms = [...this.rooms];
       this.cdr.detectChanges();
@@ -206,56 +297,6 @@ export class MessagesComponent implements OnInit, OnDestroy {
     }
   }
 
-
-  // messages.component.ts
-
-// Enrichir sendMessage pour injecter le contexte de la room si dispo
-  sendMessage() {
-    if (!this.newMessage.trim() || !this.selectedRoom) return;
-    const content = this.newMessage.trim();
-    this.newMessage = '';
-
-    setTimeout(() => {
-      const ta = document.querySelector('.chat-textarea') as HTMLTextAreaElement;
-      if (ta) ta.style.height = 'auto';
-    }, 0);
-
-    // Contexte à attacher au message si une demande est liée
-    const ctx = this.roomRequest ? {
-      context_type:     this.roomRequest.status === 'accepted' ? 'bail_signed' : 'reservation_request',
-      context_property: this.roomRequest.property_title,
-      context_bail_id:  this.roomRequest.bail_id ?? undefined,
-      context_source:   'Depuis : section Demandes',
-    } : undefined;
-
-    const sent = this.chatService.sendMessageWs(content, ctx);
-    if (!sent) {
-      this.chatService.sendMessageHttp(this.selectedRoom.id, content, ctx).subscribe({
-        next: (msg) => {
-          this.messages = [...this.messages, msg];
-          this.cdr.detectChanges();
-          this.scrollToBottom();
-        },
-        error: () => this.toast.error("Impossible d'envoyer le message.")
-      });
-    }
-  }
-
-
-  sendOnEnter(event: KeyboardEvent) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      this.sendMessage();
-    }
-  }
-
-  /** Auto-resize du textarea selon le contenu */
-  autoResize(event: Event) {
-    const ta = event.target as HTMLTextAreaElement;
-    ta.style.height = 'auto';
-    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
-  }
-
   get filteredRooms() {
     if (!this.searchQuery) return this.rooms;
     return this.rooms.filter(r =>
@@ -265,12 +306,15 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   get currentUserId() { return this.chatService.authService.getCurrentUser()?.id; }
 
+  chipLabel(req: RoomRequest): string {
+    const t = req.property_title;
+    return t.length > 28 ? t.slice(0, 28) + '…' : t;
+  }
+
   scrollToBottom() {
     setTimeout(() => {
-      const container = this.messagesContainer?.nativeElement;
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
+      const el = this.messagesContainer?.nativeElement;
+      if (el) el.scrollTop = el.scrollHeight;
     }, 50);
   }
 

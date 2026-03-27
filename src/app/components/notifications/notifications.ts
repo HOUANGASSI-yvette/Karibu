@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar/navbar';
 import { NotificationService, Notification } from '../../services/notification.service';
 import { ToastService } from '../../shared/toast.service';
@@ -9,7 +10,7 @@ import { LucideAngularModule, Bell, MessageSquare, Calendar, CheckCheck, WifiOff
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [CommonModule, NavbarComponent, LucideAngularModule],
+  imports: [CommonModule, RouterModule, NavbarComponent, LucideAngularModule],
   templateUrl: './notifications.html',
 })
 export class NotificationsComponent implements OnInit, OnDestroy {
@@ -28,14 +29,18 @@ export class NotificationsComponent implements OnInit, OnDestroy {
 
   constructor(
     public notifService: NotificationService,
-    private toast: ToastService
+    private toast: ToastService,
+    private cdr: ChangeDetectorRef,   // ✅ FIX : injecté
   ) {}
 
   ngOnInit() {
     this.loadNotifications();
     this.notifService.connectNotifications();
+
+    // ✅ FIX : detectChanges après chaque nouvelle notif WS
     this.sub = this.notifService.newNotification$.subscribe(notif => {
-      this.notifications.unshift(notif);
+      this.notifications = [notif, ...this.notifications];  // nouveau tableau = change detection sûre
+      this.cdr.detectChanges();
     });
   }
 
@@ -52,10 +57,12 @@ export class NotificationsComponent implements OnInit, OnDestroy {
       next: (notifs) => {
         this.notifications = notifs;
         this.isLoading     = false;
+        this.cdr.detectChanges();   // ✅ FIX
       },
       error: () => {
         this.isLoading = false;
         this.hasError  = true;
+        this.cdr.detectChanges();   // ✅ FIX
       }
     });
   }
@@ -64,15 +71,21 @@ export class NotificationsComponent implements OnInit, OnDestroy {
     if (notif.is_read) return;
     this.notifService.markAsRead(notif.id).subscribe({
       next: () => {
-        notif.is_read = true;
+        // ✅ FIX : on crée un nouvel objet pour déclencher la détection
+        this.notifications = this.notifications.map(n =>
+          n.id === notif.id ? { ...n, is_read: true } : n
+        );
         this.notifService.unreadCount.update(n => Math.max(0, n - 1));
+        this.cdr.detectChanges();
       },
       error: () => this.toast.error('Impossible de marquer comme lu.')
     });
   }
 
   markAllAsRead() {
-    this.notifications.filter(n => !n.is_read).forEach(n => this.markAsRead(n));
+    const unread = this.notifications.filter(n => !n.is_read);
+    if (!unread.length) return;
+    unread.forEach(n => this.markAsRead(n));
     this.toast.success('Toutes les notifications marquées comme lues.');
   }
 
@@ -81,12 +94,12 @@ export class NotificationsComponent implements OnInit, OnDestroy {
   }
 
   getTypeLabel(type: string): string {
-    return {
+    return ({
       new_message:       'Nouveau message',
       booking_request:   'Demande de réservation',
       booking_confirmed: 'Réservation confirmée',
       booking_canceled:  'Réservation annulée',
-    }[type] || 'Notification';
+    } as any)[type] || 'Notification';
   }
 
   get unreadCount(): number {

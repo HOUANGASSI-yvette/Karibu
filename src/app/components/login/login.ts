@@ -1,9 +1,9 @@
-// pages/login/login.component.ts
 import { Component, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
+import { ToastService } from '../../shared/toast.service';
 import {
   LucideAngularModule,
   Eye, EyeOff, Mail, Lock, Check, ShieldCheck,
@@ -17,11 +17,9 @@ import {
   imports: [RouterLink, FormsModule, CommonModule, LucideAngularModule],
   templateUrl: './login.html',
   styleUrl: './login.css',
-  // OnPush : Angular ne re-rend que quand un signal change — plus de "fantôme"
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent implements OnInit {
-  // ── Icônes ─────────────────────────────────────────────
   readonly Eye          = Eye;
   readonly EyeOff       = EyeOff;
   readonly Mail         = Mail;
@@ -35,35 +33,28 @@ export class LoginComponent implements OnInit {
   readonly KeyRound     = KeyRound;
   readonly Home         = Home;
 
-  // ── State (signals = réactif, pas besoin d'interaction pour déclencher le rendu) ──
-  activeRole   = signal<'tenant' | 'owner'>('tenant');
   showPassword = signal(false);
   rememberMe   = signal(false);
   isLoading    = signal(false);
   errorMessage = signal('');
   mfaRequired  = signal(false);
 
-  // Pas besoin de signal pour ces deux-là (utilisés uniquement en interne)
   mfaToken = '';
   mfaCode  = '';
-
   loginData = { email: '', password: '' };
 
   constructor(
     private router: Router,
     private route: ActivatedRoute,
     private authService: AuthService,
+    private toast: ToastService,
   ) {}
 
   ngOnInit() {
-    // Connexion via Google OAuth — tokens dans les query params
     this.route.queryParams.subscribe(params => {
       if (params['access_token'] && params['refresh_token']) {
         this.isLoading.set(true);
-        this.authService.setTokens({
-          access:  params['access_token'],
-          refresh: params['refresh_token'],
-        });
+        this.authService.setTokens({ access: params['access_token'], refresh: params['refresh_token'] });
         this.authService.getProfile().subscribe({
           next: (user) => {
             this.isLoading.set(false);
@@ -78,12 +69,6 @@ export class LoginComponent implements OnInit {
         });
       }
     });
-  }
-
-  // ── Actions ────────────────────────────────────────────
-  setRole(role: 'tenant' | 'owner') {
-    this.activeRole.set(role);
-    this.errorMessage.set('');
   }
 
   togglePassword() { this.showPassword.update(v => !v); }
@@ -121,12 +106,16 @@ export class LoginComponent implements OnInit {
           this.mfaRequired.set(true);
           this.mfaToken = res.mfa_token;
         } else {
+          this.toast.success('Connexion réussie !');
           this.authService.redirectByRole(res.user);
         }
       },
       error: (err) => {
+        // ← CRITIQUE : toujours remettre isLoading à false en cas d'erreur
         this.isLoading.set(false);
-        this.errorMessage.set(this.authService.extractError(err));
+        const msg = this.authService.extractError(err);
+        this.errorMessage.set(msg);
+        this.toast.error(msg);
       },
     });
   }
@@ -141,12 +130,15 @@ export class LoginComponent implements OnInit {
     this.authService.verifyMfa(this.mfaToken, this.mfaCode).subscribe({
       next: (res) => {
         this.isLoading.set(false);
+        this.toast.success('Connexion réussie !');
         this.authService.redirectByRole(res.user);
       },
       error: (err) => {
         this.isLoading.set(false);
         this.mfaCode = '';
-        this.errorMessage.set(this.authService.extractError(err));
+        const msg = this.authService.extractError(err);
+        this.errorMessage.set(msg);
+        this.toast.error(msg);
       },
     });
   }

@@ -1,4 +1,4 @@
-/* ── Reset layout ─────────────────────────────────────────────────────────── */
+ /* ── Reset layout ─────────────────────────────────────────────────────────── */
 :host {
   display: block;
   height: 100dvh;
@@ -623,3 +623,10 @@ app-navbar { flex-shrink: 0; }
   .chat-layout                      { position: static; }
 }
 
+ /* Scrollbar fin dans la zone messages */
+ .flex-1.overflow-y-auto::-webkit-scrollbar       { width: 4px; }
+ .flex-1.overflow-y-auto::-webkit-scrollbar-track  { background: transparent; }
+ .flex-1.overflow-y-auto::-webkit-scrollbar-thumb  { background: #d6d3d1; border-radius: 2px; }
+
+ /* Auto-resize textarea */
+ .chat-textarea { field-sizing: content; }

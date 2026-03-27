@@ -1,11 +1,9 @@
-<!-- components/navbar/navbar.html -->
 <nav class="bg-white border-b border-stone-200 px-4 lg:px-8 py-0 sticky top-0 z-30">
   <div class="max-w-screen-xl mx-auto flex items-center justify-between h-16">
 
     <!-- Logo -->
     <a routerLink="/" class="flex items-center gap-2 group shrink-0">
-      <div
-        class="w-9 h-9 bg-amber-800 flex items-center justify-center text-white font-bold text-sm group-hover:bg-amber-700 transition-colors">
+      <div class="w-9 h-9 bg-amber-800 flex items-center justify-center text-white font-bold text-sm group-hover:bg-amber-700 transition-colors">
         KA
       </div>
       <span class="text-lg font-semibold text-stone-800 tracking-wide hidden sm:block">KARIBU</span>
@@ -22,20 +20,13 @@
     <!-- Centre — liens publics -->
     @if (variant === 'public') {
       <div class="hidden lg:flex items-center gap-7">
-        <a routerLink="/listings"
-           class="text-stone-600 hover:text-amber-800 transition-colors text-sm flex items-center gap-1.5">
-          <lucide-icon [img]="SearchIcon" class="w-3.5 h-3.5"></lucide-icon>
-          Annonces
+        <a routerLink="/listings" class="text-stone-600 hover:text-amber-800 transition-colors text-sm flex items-center gap-1.5">
+          <lucide-icon [img]="SearchIcon" class="w-3.5 h-3.5"></lucide-icon>Annonces
         </a>
-        <a href="#how"
-           class="text-stone-600 hover:text-amber-800 transition-colors text-sm">Comment ça marche</a>
-
-        <!-- Lien "Publier" visible seulement pour les propriétaires connectés -->
+        <a href="#how" class="text-stone-600 hover:text-amber-800 transition-colors text-sm">Comment ça marche</a>
         @if (authService.isLoggedIn() && isProprietaire) {
-          <a routerLink="/publish"
-             class="text-stone-600 hover:text-amber-800 transition-colors text-sm flex items-center gap-1.5">
-            <lucide-icon [img]="BuildingIcon" class="w-3.5 h-3.5"></lucide-icon>
-            Publier un bien
+          <a routerLink="/publish" class="text-stone-600 hover:text-amber-800 transition-colors text-sm flex items-center gap-1.5">
+            <lucide-icon [img]="BuildingIcon" class="w-3.5 h-3.5"></lucide-icon>Publier un bien
           </a>
         }
       </div>
@@ -46,13 +37,18 @@
 
       @if (authService.isLoggedIn()) {
 
-        <!-- Notifications -->
+        <!-- Notifications avec badge -->
         <a routerLink="/notifications"
-           class="w-9 h-9 border border-stone-200 bg-stone-50 flex items-center justify-center hover:border-amber-400 transition-colors">
+           class="relative w-9 h-9 border border-stone-200 bg-stone-50 flex items-center justify-center hover:border-amber-400 transition-colors">
           <lucide-icon [img]="BellIcon" class="w-4 h-4 text-stone-600"></lucide-icon>
+          @if (unreadNotifCount > 0) {
+            <span class="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 bg-amber-800 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+              {{ unreadNotifCount > 99 ? '99+' : unreadNotifCount }}
+            </span>
+          }
         </a>
 
-        <!-- Messages — masqué pour admin -->
+        <!-- Messages -->
         @if (!isAdmin) {
           <a routerLink="/messages"
              class="w-9 h-9 border border-stone-200 bg-stone-50 flex items-center justify-center hover:border-amber-400 transition-colors hidden sm:flex">
@@ -74,108 +70,78 @@
             <lucide-icon [img]="ChevronDown" class="w-3.5 h-3.5 text-stone-400 hidden sm:block"></lucide-icon>
           </button>
 
-          <!-- Dropdown -->
           @if (userMenuOpen) {
-            <div (click)="closeUserMenu()"
-                 class="fixed inset-0 z-40"
-                 style="background:transparent">
-            </div>
+            <div (click)="closeUserMenu()" class="fixed inset-0 z-40" style="background:transparent"></div>
             <div class="absolute right-0 top-full mt-1 w-52 bg-white border border-stone-200 shadow-lg z-50">
 
-              <!-- Infos user -->
               <div class="px-4 py-3 border-b border-stone-100">
                 <p class="text-xs font-semibold text-stone-800">{{ userName }}</p>
                 <p class="text-xs text-stone-400 mt-0.5">{{ userRoleLabel }}</p>
               </div>
 
-              <!-- Liens communs -->
-              <!-- Liens communs -->
               <div class="py-1">
                 @if (isProprietaire || isAdmin) {
                   <a routerLink="/dashboard" (click)="closeUserMenu()"
                      class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
-                    <lucide-icon [img]="DashboardIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-                    Tableau de bord
+                    <lucide-icon [img]="DashboardIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Tableau de bord
                   </a>
                 }
                 @if (isLocataire) {
                   <a routerLink="/listings" (click)="closeUserMenu()"
                      class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
-                    <lucide-icon [img]="SearchIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-                    Mes recherches
+                    <lucide-icon [img]="SearchIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Mes recherches
                   </a>
                 }
                 <a routerLink="/profil" (click)="closeUserMenu()"
                    class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
-                  <lucide-icon [img]="UserIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-                  Mon profil
+                  <lucide-icon [img]="UserIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Mon profil
                 </a>
                 @if (isProprietaire && !isVerified) {
                   <a routerLink="/proprietaire/statut" (click)="closeUserMenu()"
                      class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors">
-                    <lucide-icon [img]="ShieldIcon" class="w-4 h-4 text-amber-600"></lucide-icon>
-                    ⚠ Vérifier mon compte
+                    <lucide-icon [img]="ShieldIcon" class="w-4 h-4 text-amber-600"></lucide-icon>Vérifier mon compte
                   </a>
                 }
               </div>
 
-              <!-- Section propriétaire -->
               @if (isProprietaire) {
                 <div class="py-1 border-t border-stone-100">
                   <p class="px-4 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wider">Propriétaire</p>
                   <a routerLink="/proprietaire/documents" (click)="closeUserMenu()"
                      class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
-                    <lucide-icon [img]="ShieldIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-                    Mes documents
+                    <lucide-icon [img]="ShieldIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Mes documents
                   </a>
                   <a routerLink="/proprietaire/statut" (click)="closeUserMenu()"
                      class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
-                    <lucide-icon [img]="BuildingIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-                    Statut vérification
+                    <lucide-icon [img]="BuildingIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Statut vérification
                   </a>
-                  <a routerLink="/mes-biens" (click)="closeUserMenu()"
-                     class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
-                    <lucide-icon [img]="HomeIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-                    Mes biens
-                  </a>
+
                 </div>
               }
 
-              <!-- Admin -->
               @if (isAdmin) {
                 <div class="py-1 border-t border-stone-100">
                   <p class="px-4 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wider">Admin</p>
                   <a routerLink="/admin" (click)="closeUserMenu()"
                      class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
-                    <lucide-icon [img]="ShieldIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-                    Panneau admin
+                    <lucide-icon [img]="ShieldIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Panneau admin
                   </a>
                 </div>
               }
 
-              <!-- Déconnexion -->
               <div class="py-1 border-t border-stone-100">
                 <button (click)="logout(); closeUserMenu()"
                         class="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
-                  <lucide-icon [img]="LogOutIcon" class="w-4 h-4"></lucide-icon>
-                  Déconnexion
+                  <lucide-icon [img]="LogOutIcon" class="w-4 h-4"></lucide-icon>Déconnexion
                 </button>
               </div>
-
             </div>
           }
         </div>
 
       } @else {
-        <!-- Non connecté -->
-        <a routerLink="/login"
-           class="px-4 py-2 text-stone-600 hover:text-amber-800 transition-colors text-sm hidden sm:block">
-          Se connecter
-        </a>
-        <a routerLink="/register"
-           class="px-5 py-2.5 bg-amber-800 text-white hover:bg-amber-700 transition-colors font-medium text-sm">
-          S'inscrire
-        </a>
+        <a routerLink="/login" class="px-4 py-2 text-stone-600 hover:text-amber-800 transition-colors text-sm hidden sm:block">Se connecter</a>
+        <a routerLink="/register" class="px-5 py-2.5 bg-amber-800 text-white hover:bg-amber-700 transition-colors font-medium text-sm">S'inscrire</a>
       }
 
       <!-- Burger mobile -->
@@ -190,47 +156,42 @@
   @if (mobileMenuOpen) {
     <div class="lg:hidden border-t border-stone-100 bg-white">
       <div class="py-2 space-y-0.5">
-
         <a routerLink="/listings" (click)="mobileMenuOpen=false"
            class="flex items-center gap-3 px-5 py-3 text-sm text-stone-700 hover:bg-stone-50">
-          <lucide-icon [img]="SearchIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-          Annonces
+          <lucide-icon [img]="SearchIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Annonces
         </a>
 
         @if (authService.isLoggedIn()) {
-
-          <div class="py-1">
-            @if (isProprietaire || isAdmin) {
-              <a routerLink="/dashboard" (click)="closeUserMenu()"
-                 class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
-                <lucide-icon [img]="DashboardIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-                Tableau de bord
-              </a>
-            }
-            <a routerLink="/profil" (click)="closeUserMenu()"
-               class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
-              <lucide-icon [img]="UserIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-              Mon profil
+          @if (isProprietaire || isAdmin) {
+            <a routerLink="/dashboard" (click)="mobileMenuOpen=false"
+               class="flex items-center gap-3 px-5 py-3 text-sm text-stone-700 hover:bg-stone-50">
+              <lucide-icon [img]="DashboardIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Tableau de bord
             </a>
-
-            @if (isProprietaire && !isVerified) {
-              <a routerLink="/proprietaire/statut" (click)="closeUserMenu()"
-                 class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors">
-                <lucide-icon [img]="ShieldIcon" class="w-4 h-4 text-amber-600"></lucide-icon>
-                ⚠ Vérifier mon compte
-              </a>
-            }
-          </div>
-
+          }
+          <a routerLink="/profil" (click)="mobileMenuOpen=false"
+             class="flex items-center gap-3 px-5 py-3 text-sm text-stone-700 hover:bg-stone-50">
+            <lucide-icon [img]="UserIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Mon profil
+          </a>
+          @if (isProprietaire && !isVerified) {
+            <a routerLink="/proprietaire/statut" (click)="mobileMenuOpen=false"
+               class="flex items-center gap-3 px-5 py-3 text-sm text-amber-700 bg-amber-50 hover:bg-amber-100">
+              <lucide-icon [img]="ShieldIcon" class="w-4 h-4 text-amber-600"></lucide-icon>⚠ Vérifier mon compte
+            </a>
+          }
           <a routerLink="/messages" (click)="mobileMenuOpen=false"
              class="flex items-center gap-3 px-5 py-3 text-sm text-stone-700 hover:bg-stone-50">
-            <lucide-icon [img]="MessageIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-            Messages
+            <lucide-icon [img]="MessageIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Messages
           </a>
+          <!-- Notifs mobile avec badge inline -->
           <a routerLink="/notifications" (click)="mobileMenuOpen=false"
              class="flex items-center gap-3 px-5 py-3 text-sm text-stone-700 hover:bg-stone-50">
             <lucide-icon [img]="BellIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-            Notifications
+            <span>Notifications</span>
+            @if (unreadNotifCount > 0) {
+              <span class="ml-auto min-w-5 h-5 px-1 bg-amber-800 text-white text-[11px] font-bold rounded-full flex items-center justify-center">
+                {{ unreadNotifCount > 99 ? '99+' : unreadNotifCount }}
+              </span>
+            }
           </a>
 
           @if (isProprietaire) {
@@ -239,40 +200,31 @@
             </div>
             <a routerLink="/proprietaire/documents" (click)="mobileMenuOpen=false"
                class="flex items-center gap-3 px-5 py-3 text-sm text-stone-700 hover:bg-stone-50">
-              <lucide-icon [img]="ShieldIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-              Mes documents
+              <lucide-icon [img]="ShieldIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Mes documents
             </a>
             <a routerLink="/mes-biens" (click)="mobileMenuOpen=false"
                class="flex items-center gap-3 px-5 py-3 text-sm text-stone-700 hover:bg-stone-50">
-              <lucide-icon [img]="BuildingIcon" class="w-4 h-4 text-stone-400"></lucide-icon>
-              Mes biens
+              <lucide-icon [img]="BuildingIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Mes biens
             </a>
             <a routerLink="/publier" (click)="mobileMenuOpen=false"
                class="flex items-center gap-3 px-5 py-3 text-sm text-amber-800 font-medium hover:bg-amber-50">
-              <lucide-icon [img]="HomeIcon" class="w-4 h-4"></lucide-icon>
-              Publier un bien
+              <lucide-icon [img]="HomeIcon" class="w-4 h-4"></lucide-icon>Publier un bien
             </a>
           }
 
           <div class="border-t border-stone-100 mt-2 pt-2">
             <button (click)="logout(); mobileMenuOpen=false"
                     class="w-full flex items-center gap-3 px-5 py-3 text-sm text-red-600 hover:bg-red-50">
-              <lucide-icon [img]="LogOutIcon" class="w-4 h-4"></lucide-icon>
-              Déconnexion
+              <lucide-icon [img]="LogOutIcon" class="w-4 h-4"></lucide-icon>Déconnexion
             </button>
           </div>
 
         } @else {
           <a routerLink="/login" (click)="mobileMenuOpen=false"
-             class="flex items-center gap-3 px-5 py-3 text-sm text-stone-700 hover:bg-stone-50">
-            Se connecter
-          </a>
+             class="flex items-center gap-3 px-5 py-3 text-sm text-stone-700 hover:bg-stone-50">Se connecter</a>
           <a routerLink="/register" (click)="mobileMenuOpen=false"
-             class="flex items-center gap-3 px-5 py-3 text-sm text-amber-800 font-medium hover:bg-amber-50">
-            S'inscrire
-          </a>
+             class="flex items-center gap-3 px-5 py-3 text-sm text-amber-800 font-medium hover:bg-amber-50">S'inscrire</a>
         }
-
       </div>
     </div>
   }

@@ -1,17 +1,29 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
-import { FormsModule } from '@angular/forms';
+import {Component, OnInit, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {RouterModule} from '@angular/router';
+import {FormsModule} from '@angular/forms';
 import {
+  AlertCircle,
+  CheckCircle,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  FileText,
+  Lock,
   LucideAngularModule,
-  User, Mail, Lock, ShieldCheck, ShieldAlert, ShieldX,
-  FileText, ChevronRight, Save, Eye, EyeOff, AlertCircle, CheckCircle, ArrowLeft, Smartphone,
+  Mail,
+  Save,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldX,
+  Smartphone,
+  User,
 } from 'lucide-angular';
-import { AuthService } from '../../services/auth.service';
-import { ProprietaireService, ProprietaireProfil } from '../../services/proprietaire.service';
-import { ToastService } from '../../shared/toast.service';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../environments/environment';
+import {AuthService} from '../../services/auth.service';
+import {ProprietaireProfil, ProprietaireService} from '../../services/proprietaire.service';
+import {ToastService} from '../../shared/toast.service';
+import {HttpClient} from '@angular/common/http';
+import {environment} from '../../../environments/environment';
 
 @Component({
   selector: 'app-profil',
@@ -20,48 +32,48 @@ import { environment } from '../../../environments/environment';
   templateUrl: './profil.component.html',
 })
 export class ProfilComponent implements OnInit {
-  readonly UserIcon       = User;
-  readonly MailIcon       = Mail;
-  readonly LockIcon       = Lock;
-  readonly ShieldCheck    = ShieldCheck;
-  readonly ShieldAlert    = ShieldAlert;
-  readonly ShieldX        = ShieldX;
-  readonly FileTextIcon   = FileText;
-  readonly ChevronRight   = ChevronRight;
-  readonly SaveIcon       = Save;
-  readonly EyeIcon        = Eye;
-  readonly EyeOffIcon     = EyeOff;
-  readonly AlertIcon      = AlertCircle;
-  readonly CheckIcon      = CheckCircle;
-  readonly ArrowLeft      = ArrowLeft;
+  readonly UserIcon = User;
+  readonly MailIcon = Mail;
+  readonly LockIcon = Lock;
+  readonly ShieldCheck = ShieldCheck;
+  readonly ShieldAlert = ShieldAlert;
+  readonly ShieldX = ShieldX;
+  readonly FileTextIcon = FileText;
+  readonly ChevronRight = ChevronRight;
+  readonly SaveIcon = Save;
+  readonly EyeIcon = Eye;
+  readonly EyeOffIcon = EyeOff;
+  readonly AlertIcon = AlertCircle;
+  readonly CheckIcon = CheckCircle;
   readonly SmartphoneIcon = Smartphone;
 
   activeTab = signal<'infos' | 'securite' | 'mfa'>('infos');
   currentUser = signal<any>(null);
+  isLoadingUser = signal(true);
 
   // Infos
-  editFirst    = '';
-  editLast     = '';
+  editFirst = '';
+  editLast = '';
   editUsername = '';
   isSavingInfos = signal(false);
 
   // Mot de passe
   oldPassword = '';
   newPassword = '';
-  confirmPw   = '';
-  showOld    = signal(false);
-  showNew    = signal(false);
+  confirmPw = '';
+  showOld = signal(false);
+  showNew = signal(false);
   isSavingPw = signal(false);
 
   // Proprio
   proprietaireProfil = signal<ProprietaireProfil | null>(null);
-  isLoadingProprio   = signal(false);
+  isLoadingProprio = signal(false);
 
   // MFA
-  mfaStep    = signal<'idle' | 'setup' | 'verify-disable'>('idle');
-  mfaQrCode  = signal<string | null>(null);
-  mfaSecret  = signal<string | null>(null);
-  mfaCode    = '';
+  mfaStep = signal<'idle' | 'setup' | 'verify-disable'>('idle');
+  mfaQrCode = signal<string | null>(null);
+  mfaSecret = signal<string | null>(null);
+  mfaCode = '';
   mfaLoading = signal(false);
 
   constructor(
@@ -69,29 +81,69 @@ export class ProfilComponent implements OnInit {
     private proprietaireService: ProprietaireService,
     private http: HttpClient,
     private toast: ToastService,
-  ) {}
-
-  ngOnInit() {
-    const u = this.authService.getCurrentUser();
-    this.currentUser.set(u);
-    this.editFirst    = u?.first_name ?? '';
-    this.editLast     = u?.last_name  ?? '';
-    this.editUsername = u?.username   ?? '';
-    if (u?.role === 'proprietaire') this.loadProprietaire();
+  ) {
   }
 
-  get role()          { return this.currentUser()?.role ?? ''; }
-  get isProprietaire(){ return this.role === 'proprietaire'; }
-  get mfaEnabled()    { return this.currentUser()?.mfa_is_enabled ?? false; }
+  ngOnInit() {
 
-  setTab(t: 'infos' | 'securite' | 'mfa') { this.activeTab.set(t); }
-  toggleShowOld() { this.showOld.update(v => !v); }
-  toggleShowNew() { this.showNew.update(v => !v); }
+    this.isLoadingUser.set(true);
+    this.authService.getProfile().subscribe({
+      next: (u: any) => {
+
+        this.authService.currentUser.set(u);
+        localStorage.setItem('user', JSON.stringify(u));
+        this.currentUser.set(u);
+        this.editFirst = u?.first_name ?? '';
+        this.editLast = u?.last_name ?? '';
+        this.editUsername = u?.username ?? '';
+        this.isLoadingUser.set(false);
+        if (u?.role === 'proprietaire') this.loadProprietaire();
+      },
+      error: () => {
+        // Fallback sur le cache si l'API échoue
+        const u = this.authService.getCurrentUser();
+        this.currentUser.set(u);
+        this.editFirst = u?.first_name ?? '';
+        this.editLast = u?.last_name ?? '';
+        this.editUsername = u?.username ?? '';
+        this.isLoadingUser.set(false);
+        if (u?.role === 'proprietaire') this.loadProprietaire();
+      },
+    });
+  }
+
+  get role() {
+    return this.currentUser()?.role ?? '';
+  }
+
+  get isProprietaire() {
+    return this.role === 'proprietaire';
+  }
+
+
+  get mfaEnabled() {
+    return this.currentUser()?.mfa_is_enabled ?? false;
+  }
+
+  setTab(t: 'infos' | 'securite' | 'mfa') {
+    this.activeTab.set(t);
+  }
+
+  toggleShowOld() {
+    this.showOld.update(v => !v);
+  }
+
+  toggleShowNew() {
+    this.showNew.update(v => !v);
+  }
 
   loadProprietaire() {
     this.isLoadingProprio.set(true);
     this.proprietaireService.monProfil().subscribe({
-      next:  p => { this.proprietaireProfil.set(p); this.isLoadingProprio.set(false); },
+      next: p => {
+        this.proprietaireProfil.set(p);
+        this.isLoadingProprio.set(false);
+      },
       error: () => this.isLoadingProprio.set(false),
     });
   }
@@ -102,14 +154,15 @@ export class ProfilComponent implements OnInit {
     this.isSavingInfos.set(true);
     this.http.patch(`${environment.apiUrl}/auth/users/${u.id}/update/`, {
       first_name: this.editFirst,
-      last_name:  this.editLast,
-      username:   this.editUsername,
+      last_name: this.editLast,
+      username: this.editUsername,
     }).subscribe({
       next: (updated: any) => {
         this.isSavingInfos.set(false);
-        this.authService.currentUser.set(updated);
-        localStorage.setItem('user', JSON.stringify(updated));
-        this.currentUser.set(updated);
+        const merged = {...this.currentUser(), ...updated};
+        this.authService.currentUser.set(merged);
+        localStorage.setItem('user', JSON.stringify(merged));
+        this.currentUser.set(merged);
         this.toast.success('Profil mis à jour.');
       },
       error: (err) => {
@@ -137,7 +190,7 @@ export class ProfilComponent implements OnInit {
         this.isSavingPw.set(false);
         this.oldPassword = '';
         this.newPassword = '';
-        this.confirmPw   = '';
+        this.confirmPw = '';
         this.toast.success('Mot de passe modifié avec succès.');
       },
       error: (err) => {
@@ -165,12 +218,12 @@ export class ProfilComponent implements OnInit {
 
   activateMfa() {
     this.mfaLoading.set(true);
-    this.http.post<any>(`${environment.apiUrl}/auth/mfa/activate/`, { code: this.mfaCode }).subscribe({
+    this.http.post<any>(`${environment.apiUrl}/auth/mfa/activate/`, {code: this.mfaCode}).subscribe({
       next: () => {
         this.mfaLoading.set(false);
         this.mfaStep.set('idle');
         this.mfaCode = '';
-        const u = { ...this.currentUser(), mfa_is_enabled: true };
+        const u = {...this.currentUser(), mfa_is_enabled: true};
         this.authService.currentUser.set(u);
         localStorage.setItem('user', JSON.stringify(u));
         this.currentUser.set(u);
@@ -185,12 +238,12 @@ export class ProfilComponent implements OnInit {
 
   disableMfa() {
     this.mfaLoading.set(true);
-    this.http.post<any>(`${environment.apiUrl}/auth/mfa/disable/`, { code: this.mfaCode }).subscribe({
+    this.http.post<any>(`${environment.apiUrl}/auth/mfa/disable/`, {code: this.mfaCode}).subscribe({
       next: () => {
         this.mfaLoading.set(false);
         this.mfaStep.set('idle');
         this.mfaCode = '';
-        const u = { ...this.currentUser(), mfa_is_enabled: false };
+        const u = {...this.currentUser(), mfa_is_enabled: false};
         this.authService.currentUser.set(u);
         localStorage.setItem('user', JSON.stringify(u));
         this.currentUser.set(u);
@@ -203,10 +256,17 @@ export class ProfilComponent implements OnInit {
     });
   }
 
-  cancelMfa() { this.mfaStep.set('idle'); this.mfaCode = ''; }
+  cancelMfa() {
+    this.mfaStep.set('idle');
+    this.mfaCode = '';
+  }
 
   statutLabel(s: string) {
-    return ({ en_attente: 'En attente de vérification', verifie: 'Compte vérifié', rejete: 'Dossier rejeté' } as any)[s] ?? s;
+    return ({
+      en_attente: 'En attente de vérification',
+      verifie: 'Compte vérifié',
+      rejete: 'Dossier rejeté'
+    } as any)[s] ?? s;
   }
 
   countByStatut(s: string) {

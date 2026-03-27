@@ -48,9 +48,7 @@
 
       @if (activeSection === 'payments') {
         <!-- payments-section charge ses propres données -->
-        <app-payments-section
-          [payments]="[]"
-          (quittanceDownload)="onQuittanceDownload($event)">
+        <app-payments-section>
         </app-payments-section>
       }
 
@@ -73,6 +71,10 @@
 
       @if (activeSection === 'admin-documents') {
         <app-admin-documents-section></app-admin-documents-section>
+      }
+
+      @if (activeSection === 'admin-disputes') {
+        <app-admin-disputes-section></app-admin-disputes-section>
       }
 
     </main>

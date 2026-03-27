@@ -1,0 +1,380 @@
+<!-- Overlay -->
+<div class="fixed inset-0 z-50 flex justify-end overlay-bg bg-stone-900/40"
+     (click)="onOverlayClick($event)">
+
+  <!-- Drawer -->
+  <div class="relative bg-white w-full max-w-lg h-full flex flex-col shadow-2xl"
+       (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between px-6 py-4 border-b border-stone-200 bg-stone-50 shrink-0">
+      <div class="flex items-center gap-3">
+        <lucide-icon [img]="CardIcon" size="20" class="text-amber-800"></lucide-icon>
+        <div>
+          <h2 class="text-base font-semibold text-stone-900">
+            @if (view === 'list') { Paiements }
+            @if (view === 'pay') { Nouveau paiement }
+            @if (view === 'contest') { Contester un paiement }
+          </h2>
+          <p class="text-xs text-stone-500">Bail #{{ bailId }}</p>
+        </div>
+      </div>
+      <button (click)="close.emit()"
+              class="w-8 h-8 flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-200 transition-colors">
+        <lucide-icon [img]="XIcon" size="16"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- ── Skeleton ── -->
+    @if (isLoading) {
+      <div class="flex-1 overflow-y-auto p-5 space-y-3 animate-pulse">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="h-20 bg-stone-100 border border-stone-200"></div>
+          <div class="h-20 bg-stone-100 border border-stone-200"></div>
+        </div>
+        @for (i of [1,2,3]; track i) {
+          <div class="h-16 bg-stone-100 border border-stone-200"></div>
+        }
+      </div>
+    }
+
+    <!-- ── Vue liste ── -->
+    @if (!isLoading && view === 'list') {
+      <div class="flex-1 overflow-y-auto">
+
+        <!-- Résumé stats -->
+        <div class="grid grid-cols-2 gap-3 px-5 pt-5 pb-4">
+          <div class="border border-stone-200 p-3">
+            <p class="text-xs text-stone-400 mb-1">Total payé</p>
+            <p class="text-lg font-semibold text-stone-900">{{ totalPaye | number }} <span class="text-xs font-normal text-stone-500">FCFA</span></p>
+          </div>
+          <div class="border p-3"
+               [class.border-red-200]="moisEnRetard > 0"
+               [class.bg-red-50]="moisEnRetard > 0"
+               [class.border-stone-200]="moisEnRetard === 0">
+            <p class="text-xs mb-1" [class.text-red-500]="moisEnRetard > 0" [class.text-stone-400]="moisEnRetard === 0">
+              Litiges ouverts
+            </p>
+            <p class="text-lg font-semibold" [class.text-red-700]="moisEnRetard > 0" [class.text-stone-900]="moisEnRetard === 0">
+              {{ moisEnRetard }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Explication escrow -->
+        <div class="mx-5 mb-4 flex items-start gap-2.5 bg-amber-50 border border-amber-200 px-4 py-3">
+          <lucide-icon [img]="ClockIcon" size="16" class="text-amber-700 shrink-0 mt-0.5"></lucide-icon>
+          <div>
+            <p class="text-xs font-medium text-amber-900">Système de séquestre (escrow)</p>
+            <p class="text-xs text-amber-700 mt-0.5">
+              Chaque paiement est bloqué 5 jours. Sans contestation, le propriétaire
+              reçoit automatiquement 95% du montant. Karibu prélève 5% de commission.
+            </p>
+          </div>
+        </div>
+
+        <!-- Historique -->
+        <div class="px-5 pb-5 space-y-2">
+          <p class="text-xs font-medium text-stone-500 uppercase tracking-wider mb-3">Historique</p>
+
+          @if (paiements.length === 0) {
+            <div class="text-center py-10 text-sm text-stone-400">
+              Aucun paiement enregistré
+            </div>
+          }
+
+          @for (p of paiements; track p.id) {
+            <div class="border border-stone-200 p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-stone-900">{{ formatMois(p.mois_concerne) }}</p>
+                  <p class="text-xs text-stone-400 mt-0.5">
+                    Payé le {{ formatDate(p.date_paiement) }}
+                    @if (p.methode_paiement) { · {{ p.methode_paiement | uppercase }} }
+                  </p>
+                  @if (p.reference_paiement) {
+                    <p class="text-xs text-stone-400 font-mono mt-0.5">Réf: {{ p.reference_paiement }}</p>
+                  }
+                  @if (p.date_confirmation) {
+                    <p class="text-xs text-green-600 mt-0.5">
+                      Confirmé le {{ formatDate(p.date_confirmation) }}
+                    </p>
+                  }
+
+                </div>
+                <div class="flex flex-col items-end gap-2 shrink-0">
+                  <span class="text-sm font-bold text-stone-900">{{ p.montant | number }} FCFA</span>
+                  <span class="text-[11px] px-2 py-0.5 border font-medium" [ngClass]="statutClasses(p.statut)">
+                    {{ statutLabel(p.statut) }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Barre progression escrow (statut paye) -->
+              @if (p.statut === 'paye') {
+                <div class="mt-3 pt-3 border-t border-stone-100">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-[11px] text-stone-500">Délai de contestation en cours</span>
+                    <span class="text-[11px] text-amber-700 font-medium">5 jours</span>
+                  </div>
+                  <div class="h-1 bg-stone-100 w-full">
+                    <div class="h-1 bg-amber-400 w-2/5 transition-all"></div>
+                  </div>
+                  <!-- Actions selon rôle -->
+                  <div class="flex gap-2 mt-3">
+                    @if (isProprietaire) {
+                      <button (click)="liberer(p.id)" [disabled]="isSubmitting"
+                              class="flex-1 py-2 text-xs font-medium border border-green-300 text-green-700
+                                     hover:bg-green-50 transition-colors disabled:opacity-40">
+                        Libérer maintenant
+                      </button>
+                    }
+                    @if (!isProprietaire) {
+                      <button (click)="ouvrirContestation(p.id)"
+                              class="flex-1 py-2 text-xs font-medium border border-red-200 text-red-600
+                                     hover:bg-red-50 transition-colors">
+                        Contester
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Statut confirme -->
+              @if (p.statut === 'confirme') {
+                <div class="mt-3 flex items-center gap-1.5 text-[11px] text-green-600">
+                  <lucide-icon [img]="CheckIcon" size="12"></lucide-icon>
+                  Fonds libérés au propriétaire (95% = {{ p.montant * 0.95 | number:'1.0-0' }} FCFA)
+                </div>
+              }
+
+              <!-- Statut en_retard (litige) -->
+              @if (p.statut === 'en_retard') {
+                <div class="mt-3 flex items-center gap-1.5 text-[11px] text-red-600">
+                  <lucide-icon [img]="WarnIcon" size="12"></lucide-icon>
+                  Litige ouvert — arbitrage admin en cours (sous 48h)
+                </div>
+              }
+
+              <!-- Statut rembourse -->
+              @if (p.statut === 'rembourse') {
+                <div class="mt-3 flex items-center gap-1.5 text-[11px] text-stone-500">
+                  <lucide-icon [img]="RefreshIcon" size="12"></lucide-icon>
+                  Remboursé au locataire suite à arbitrage
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Footer liste -->
+      @if (!isProprietaire) {
+        <div class="border-t border-stone-200 px-5 py-4 bg-stone-50 shrink-0">
+          <button (click)="view = 'pay'"
+                  class="w-full py-3 bg-amber-800 text-white text-sm font-medium hover:bg-amber-700 transition-colors flex items-center justify-center gap-2">
+            <lucide-icon [img]="CardIcon" size="16"></lucide-icon>
+            Effectuer un paiement
+          </button>
+        </div>
+      }
+    }
+
+    <!-- ── Vue formulaire paiement ── -->
+    @if (!isLoading && view === 'pay') {
+      <div class="flex-1 overflow-y-auto p-5 space-y-4">
+
+        <!-- Info escrow -->
+        <div class="bg-blue-50 border border-blue-200 px-4 py-3 text-xs text-blue-800">
+          <p class="font-medium mb-1">Comment ça fonctionne</p>
+          <ol class="list-decimal list-inside space-y-1 text-blue-700">
+            <li>Vous choisissez votre méthode de paiement</li>
+            <li>Le paiement est enregistré et bloqué 5 jours</li>
+            <li>Sans litige, le propriétaire reçoit 95% automatiquement</li>
+            <li>Karibu perçoit 5% de commission de service</li>
+          </ol>
+        </div>
+
+        <!-- Montant -->
+        <div>
+          <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+            Montant (FCFA) <span class="text-red-500">*</span>
+          </label>
+          <input type="number"
+                 [(ngModel)]="form.montant"
+                 name="montant"
+                 [placeholder]="prixLoyer ? prixLoyer.toString() : '0'"
+                 class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm
+                        focus:outline-none focus:border-amber-400 focus:bg-white transition-colors"
+                 required>
+          @if (prixLoyer) {
+            <p class="text-xs text-stone-400 mt-1">Loyer mensuel : {{ prixLoyer | number }} FCFA</p>
+          }
+        </div>
+
+        <!-- Mois concerné -->
+        <div>
+          <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+            Mois concerné <span class="text-red-500">*</span>
+          </label>
+          <input type="date"
+                 [(ngModel)]="form.mois_concerne"
+                 name="mois"
+                 class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm
+                        focus:outline-none focus:border-amber-400 focus:bg-white transition-colors"
+                 required>
+          <p class="text-xs text-stone-400 mt-1">Choisir le 1er du mois concerné</p>
+        </div>
+
+        <!-- Méthode -->
+        <div>
+          <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+            Méthode de paiement
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            @for (m of methodes; track m.value) {
+              <button type="button"
+                      (click)="setMethode(m.value)"
+                      class="flex items-center gap-2 px-3 py-2.5 border text-sm transition-colors text-left"
+                      [class.border-amber-800]="form.methode === m.value"
+                      [class.bg-amber-50]="form.methode === m.value"
+                      [class.text-amber-900]="form.methode === m.value"
+                      [class.font-medium]="form.methode === m.value"
+                      [class.border-stone-200]="form.methode !== m.value"
+                      [class.text-stone-600]="form.methode !== m.value">
+                <span>{{ m.icon }}</span>
+                <span class="text-xs">{{ m.label }}</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Numéro téléphone (si mobile money) -->
+        @if (form.methode !== 'especes') {
+          <div>
+            <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+              Numéro de téléphone
+            </label>
+            <div class="flex">
+              <div class="border border-r-0 border-stone-200 bg-stone-100 px-3 py-3 text-sm text-stone-600 shrink-0">
+                +228
+              </div>
+              <input type="tel"
+                     [(ngModel)]="form.numero_telephone"
+                     name="tel"
+                     placeholder="90 00 00 00"
+                     class="flex-1 border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 text-sm
+                            focus:outline-none focus:border-amber-400 focus:bg-white transition-colors">
+            </div>
+          </div>
+        }
+
+        <!-- Note optionnelle -->
+        <div>
+          <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+            Note (optionnel)
+          </label>
+          <textarea [(ngModel)]="form.note"
+                    name="note"
+                    rows="2"
+                    placeholder="Ex : paiement mois de juin, en avance…"
+                    class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-800
+                           placeholder-stone-400 focus:outline-none focus:border-amber-400 resize-none transition-colors">
+          </textarea>
+        </div>
+
+        <!-- Récap commission -->
+        @if (form.montant > 0) {
+          <div class="border border-stone-200 p-4 bg-stone-50 space-y-2">
+            <p class="text-xs font-medium text-stone-600 uppercase tracking-wider">Récapitulatif</p>
+            <div class="flex justify-between text-sm">
+              <span class="text-stone-500">Montant payé</span>
+              <span class="font-medium text-stone-900">{{ form.montant | number }} FCFA</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-stone-500">Commission Karibu (5%)</span>
+              <span class="text-stone-700">− {{ form.montant * 0.05 | number:'1.0-0' }} FCFA</span>
+            </div>
+            <div class="flex justify-between text-sm border-t border-stone-200 pt-2 mt-2">
+              <span class="font-medium text-stone-700">Propriétaire reçoit</span>
+              <span class="font-bold text-green-700">{{ form.montant * 0.95 | number:'1.0-0' }} FCFA</span>
+            </div>
+            <p class="text-[11px] text-stone-400 pt-1">
+              Libération automatique après 5 jours sans contestation
+            </p>
+          </div>
+        }
+
+      </div>
+
+      <!-- Footer formulaire -->
+      <div class="border-t border-stone-200 px-5 py-4 flex gap-3 bg-stone-50 shrink-0">
+        <button (click)="view = 'list'" [disabled]="isSubmitting"
+                class="px-5 py-3 border border-stone-200 text-stone-600 text-sm hover:bg-stone-100 transition-colors disabled:opacity-40">
+          Retour
+        </button>
+        <button (click)="simuler()" [disabled]="isSubmitting || !form.montant || !form.mois_concerne"
+                class="flex-1 py-3 bg-amber-800 text-white text-sm font-medium hover:bg-amber-700 transition-colors
+                       disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          @if (isSubmitting) {
+            <div class="w-4 h-4 border-2 border-white border-t-transparent animate-spin"></div>
+            Traitement en cours…
+          } @else {
+            <lucide-icon [img]="CardIcon" size="16"></lucide-icon>
+            Confirmer le paiement {{ form.methode | uppercase }}
+          }
+        </button>
+      </div>
+    }
+
+    <!-- ── Vue contestation ── -->
+    @if (!isLoading && view === 'contest') {
+      <div class="flex-1 overflow-y-auto p-5 space-y-4">
+
+        <div class="flex items-start gap-2.5 bg-red-50 border border-red-200 px-4 py-3">
+          <lucide-icon [img]="WarnIcon" size="16" class="text-red-600 shrink-0 mt-0.5"></lucide-icon>
+          <div>
+            <p class="text-xs font-medium text-red-800">Ouverture d'un litige</p>
+            <p class="text-xs text-red-700 mt-0.5">
+              Un administrateur Karibu examinera le litige et tranchera sous 48h.
+              Le paiement reste bloqué pendant toute la durée de l'arbitrage.
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-2">
+            Motif de contestation <span class="text-red-500">*</span>
+          </label>
+          <textarea [(ngModel)]="contestMotif"
+                    rows="5"
+                    placeholder="Décrivez le problème : montant incorrect, service non rendu, double paiement…"
+                    class="w-full border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-800
+                           placeholder-stone-400 focus:outline-none focus:border-red-400 resize-none transition-colors">
+          </textarea>
+        </div>
+
+      </div>
+
+      <!-- Footer contestation -->
+      <div class="border-t border-stone-200 px-5 py-4 flex gap-3 bg-stone-50 shrink-0">
+        <button (click)="view = 'list'" [disabled]="isSubmitting"
+                class="px-5 py-3 border border-stone-200 text-stone-600 text-sm hover:bg-stone-100 transition-colors disabled:opacity-40">
+          Annuler
+        </button>
+        <button (click)="contester()" [disabled]="isSubmitting || !contestMotif.trim()"
+                class="flex-1 py-3 bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors
+                       disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          @if (isSubmitting) {
+            <div class="w-4 h-4 border-2 border-white border-t-transparent animate-spin"></div>
+            Envoi en cours…
+          } @else {
+            <lucide-icon [img]="WarnIcon" size="16"></lucide-icon>
+            Soumettre le litige
+          }
+        </button>
+      </div>
+    }
+
+  </div>
+</div>
