@@ -119,15 +119,6 @@
                 </div>
               }
 
-              @if (isAdmin) {
-                <div class="py-1 border-t border-stone-100">
-                  <p class="px-4 py-1.5 text-xs font-medium text-stone-400 uppercase tracking-wider">Admin</p>
-                  <a routerLink="/admin" (click)="closeUserMenu()"
-                     class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
-                    <lucide-icon [img]="ShieldIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Panneau admin
-                  </a>
-                </div>
-              }
 
               <div class="py-1 border-t border-stone-100">
                 <button (click)="logout(); closeUserMenu()"
