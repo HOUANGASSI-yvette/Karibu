@@ -1,64 +1,57 @@
-// src/app/components/dashboard/sections/payments-section/payments-section.ts
 import {
-  Component, Input, OnChanges, OnInit, SimpleChanges,
-  inject, signal, computed
+  Component, OnInit, OnDestroy,
+  inject, ChangeDetectorRef, ChangeDetectionStrategy
 } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
 import { AuthService } from '../../../../services/auth.service';
 import {
   EscrowPaymentService,
   Paiement,
   SimulerPaiementPayload,
 } from '../../../../services/escrow-payment.service';
-import { environment } from '../../../../../environments/environment';
 
 type ModalType =
-  | 'payer'
-  | 'confirmer'
-  | 'quittance'
-  | 'quittance-email'
-  | 'releve-email'
-  | null;
+  | 'payer' | 'confirmer' | 'quittance'
+  | 'quittance-email' | 'releve-email' | null;
 
 @Component({
   selector: 'app-payments-section',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe],
+  imports: [CommonModule, FormsModule],
   templateUrl: './payments-section.html',
+  changeDetection: ChangeDetectionStrategy.Default,
 })
-export class PaymentsSectionComponent implements OnInit, OnChanges {
+export class PaymentsSectionComponent implements OnInit, OnDestroy {
 
-  @Input() bailId!: number;
-
-  private auth   = inject(AuthService);
-  public escrow = inject(EscrowPaymentService);
+  private auth  = inject(AuthService);
+  public  escrow = inject(EscrowPaymentService);
+  private cdr   = inject(ChangeDetectorRef);
+  private destroy$ = new Subject<void>();
 
   readonly METHOD_OPTIONS = [
-    ['flooz', 'Flooz'],
-    ['tmoney', 'T-Money'],
-    ['wave', 'Wave'],
+    ['flooz',   'Flooz'],
+    ['tmoney',  'T-Money'],
+    ['wave',    'Wave'],
     ['especes', 'Espèces'],
   ] as const;
 
-  // ── Données ──────────────────────────────────────────────────────────────
-  paiements  = signal<Paiement[]>([]);
-  // start false to avoid spinner when bailId is not provided
-  loading    = signal(false);
-  error      = signal<string | null>(null);
-  toastMsg   = signal<string | null>(null);
-  toastType  = signal<'ok' | 'err'>('ok');
+  // ── State classique (pas de signals) ─────────────────────────────────────
+  paiements:  Paiement[]     = [];
+  loading     = true;
+  error:      string | null  = null;
+  toastMsg:   string | null  = null;
+  toastType:  'ok' | 'err'   = 'ok';
+  modal:      ModalType      = null;
+  selectedPay: Paiement | null = null;
+  submitting  = false;
+  filtreStatut = 'tous';
+  filtreAnnee: number | null  = null;
 
-  // ── Modal ─────────────────────────────────────────────────────────────────
-  modal       = signal<ModalType>(null);
-  selectedPay = signal<Paiement | null>(null);
-  submitting  = signal(false);
+  // per-button loading actions
+  private loadingActions = new Set<string>();
 
-  // ── Filtres ───────────────────────────────────────────────────────────────
-  filtreStatut = signal<string>('tous');
-  filtreAnnee  = signal<number | null>(null);
-
-  // ── Formulaires ───────────────────────────────────────────────────────────
   payForm = {
     montant:          0,
     mois_concerne:    this._moisCourant(),
@@ -68,205 +61,258 @@ export class PaymentsSectionComponent implements OnInit, OnChanges {
   };
   emailForm = { email: '', annee: '' };
 
-  // ── Rôle ──────────────────────────────────────────────────────────────────
-  user            = this.auth.currentUser;
-  isLocataire     = computed(() => this.user()?.role === 'locataire');
-  isProprietaire  = computed(() => this.user()?.role === 'proprietaire');
-  isAdmin         = computed(() => this.user()?.role === 'admin' || this.user()?.is_staff);
+  // ── Rôle ─────────────────────────────────────────────────────────────────
+  get user()           { return this.auth.currentUser(); }
+  get isLocataire()    { return this.user?.role === 'locataire'; }
+  get isProprietaire() { return this.user?.role === 'proprietaire'; }
+  get isAdmin()        { return this.user?.role === 'admin' || this.user?.is_staff; }
 
-  // ── Computed ───────────────────────���──────────────────────────────────────
-  anneesDispo = computed(() => {
+  // ── Computed classiques (getters) ─────────────────────────────────────────
+  get anneesDispo(): number[] {
     const s = new Set<number>();
-    this.paiements().forEach(p => {
+    this.paiements.forEach(p => {
       if (p.mois_concerne) s.add(+p.mois_concerne.slice(0, 4));
     });
     return [...s].sort((a, b) => b - a);
-  });
+  }
 
-  paiementsFiltres = computed(() => {
-    let list = this.paiements();
-    const st = this.filtreStatut();
-    const an = this.filtreAnnee();
-    if (st !== 'tous') list = list.filter(p => p.statut === st);
-    if (an)            list = list.filter(p => p.mois_concerne?.startsWith(String(an)));
+  get paiementsFiltres(): Paiement[] {
+    let list = [...this.paiements];
+    if (this.filtreStatut !== 'tous') list = list.filter(p => p.statut === this.filtreStatut);
+    if (this.filtreAnnee)             list = list.filter(p => p.mois_concerne?.startsWith(String(this.filtreAnnee)));
     return list;
-  });
+  }
 
-  totaux = computed(() => {
-    const l = this.paiements();
+  get totaux() {
     const sum = (f: (p: Paiement) => boolean) =>
-      l.filter(f).reduce((s, p) => s + (p.montant ?? 0), 0);
+      this.paiements.filter(f).reduce((s, p) => s + (p.montant ?? 0), 0);
     return {
       confirme:   sum(p => p.statut === 'confirme'),
       en_escrow:  sum(p => p.statut === 'paye'),
-      en_attente: l.filter(p => p.statut === 'en_attente').length,
-      en_retard:  l.filter(p => p.statut === 'en_retard').length,
+      en_attente: this.paiements.filter(p => p.statut === 'en_attente').length,
+      en_retard:  this.paiements.filter(p => p.statut === 'en_retard').length,
     };
-  });
+  }
+
+  private get bailActifId(): number | null {
+    return this.paiements[0]?.bail ?? null;
+  }
+
+  // ── helpers pour gestion per-button loading ───────────────────────────────
+  private setLoading(key: string) {
+    this.loadingActions.add(key);
+    this.cdr.detectChanges();
+  }
+  private clearLoading(key: string) {
+    this.loadingActions.delete(key);
+    this.cdr.detectChanges();
+  }
+  isLoading(key: string): boolean {
+    return this.loadingActions.has(key);
+  }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
-  constructor() {
-    console.log('[PaymentsSection] constructor — component instancié');
-  }
-
   ngOnInit(): void {
-    console.log('[PaymentsSection] ngOnInit — bailId=', this.bailId);
-    // si bailId fourni déjà, lancer le chargement
-    if (this.bailId) {
-      this.charger();
-    } else {
-      // pas de bail sélectionné : on ne laisse pas le loader actif
-      this.loading.set(false);
-    }
+    this.charger();
   }
 
-  ngOnChanges(changes: SimpleChanges) {
-    console.log('[PaymentsSection] ngOnChanges', { changes, bailId: this.bailId });
-    if (changes['bailId']) {
-      if (this.bailId) {
-        this.charger();
-      } else {
-        this.paiements.set([]);
-        this.loading.set(false);
-        this.error.set(null);
-      }
-    }
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   charger() {
-    console.log('[PaymentsSection] charger() — appel service pour bailId=', this.bailId);
-    this.loading.set(true);
-    this.error.set(null);
-    this.escrow.listerPaiements(this.bailId).subscribe({
-      next: r => {
-        console.log('[PaymentsSection] listerPaiements success — paiements count=', r.paiements?.length ?? 0);
-        this.paiements.set(r.paiements);
-        this.loading.set(false);
-      },
-      error: e => {
-        console.error('[PaymentsSection] listerPaiements error', e);
-        this.error.set(e?.error?.detail ?? 'Impossible de charger les paiements.');
-        this.loading.set(false);
-      }
-    });
+    this.loading = true;
+    this.error   = null;
+    this.cdr.markForCheck();
+
+    this.escrow.mesPaiements()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: r => {
+          this.paiements = r.paiements ?? [];
+          this.loading   = false;
+          this.cdr.detectChanges();
+        },
+        error: e => {
+          this.error   = e?.error?.detail ?? 'Impossible de charger les paiements.';
+          this.loading = false;
+          this.cdr.detectChanges();
+        }
+      });
   }
 
-  // ── Modals / Actions (logs légers) ────────────────────────────────────────
+  // ── Modals ────────────────────────────────────────────────────────────────
   openModal(type: ModalType, pay: Paiement | null = null) {
-    console.log('[PaymentsSection] openModal', type, pay?.id);
-    this.selectedPay.set(pay);
-    this.modal.set(type);
-    this.submitting.set(false);
-    this.emailForm = { email: '', annee: '' };
+    this.selectedPay = pay;
+    this.modal       = type;
+    this.submitting  = false;
+    this.emailForm   = { email: '', annee: '' };
     if (type === 'payer') {
-      this.payForm.montant = 0;
-      this.payForm.mois_concerne = this._moisCourant();
+      this.payForm.montant          = 0;
+      this.payForm.mois_concerne    = this._moisCourant();
       this.payForm.numero_telephone = '';
-      this.payForm.note = '';
+      this.payForm.note             = '';
     }
+    this.cdr.detectChanges();
   }
 
   closeModal() {
-    console.log('[PaymentsSection] closeModal');
-    this.modal.set(null);
-    this.selectedPay.set(null);
-    this.submitting.set(false);
+    this.modal       = null;
+    this.selectedPay = null;
+    this.submitting  = false;
+    this.cdr.detectChanges();
   }
 
+  // ── Actions ───────────────────────────────────────────────────────────────
   soumettrePaiement() {
-    console.log('[PaymentsSection] soumettrePaiement', { montant: this.payForm.montant, mois: this.payForm.mois_concerne });
-    this.submitting.set(true);
+    const bailId = this.bailActifId;
+    if (!bailId) { this.toast('Aucun bail actif trouvé.', 'err'); return; }
+
+    this.submitting = true;
+    this.setLoading('soumettre');
+
     const payload: SimulerPaiementPayload = {
-      montant: this.payForm.montant,
-      mois_concerne: this.payForm.mois_concerne + '-01',
-      methode: this.payForm.methode,
+      montant:          this.payForm.montant,
+      mois_concerne:    this.payForm.mois_concerne + '-01',
+      methode:          this.payForm.methode,
       numero_telephone: this.payForm.numero_telephone || undefined,
-      note: this.payForm.note || undefined,
+      note:             this.payForm.note || undefined,
     };
-    this.escrow.simulerPaiement(this.bailId, payload).subscribe({
-      next: () => { console.log('[PaymentsSection] simulerPaiement success'); this.closeModal(); this.charger(); this.toast('Paiement effectué.', 'ok'); },
-      error: e => { console.error('[PaymentsSection] simulerPaiement error', e); this.submitting.set(false); this.toast(e?.error?.detail ?? 'Erreur.', 'err'); },
-    });
+    this.escrow.simulerPaiement(bailId, payload)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next:  () => { this.clearLoading('soumettre'); this.closeModal(); this.charger(); this.toast('Paiement effectué.', 'ok'); },
+        error: e  => { this.clearLoading('soumettre'); this.submitting = false; this.cdr.detectChanges(); this.toast(e?.error?.detail ?? 'Erreur.', 'err'); },
+      });
   }
 
   libererPaiement(pay: Paiement) {
-    console.log('[PaymentsSection] libererPaiement', pay.id);
-    this.submitting.set(true);
-    this.escrow.libererPaiement(this.bailId, pay.id).subscribe({
-      next: () => { console.log('[PaymentsSection] libererPaiement success'); this.closeModal(); this.charger(); this.toast('Paiement libéré.', 'ok'); },
-      error: e => { console.error('[PaymentsSection] libererPaiement error', e); this.submitting.set(false); this.toast(e?.error?.detail ?? 'Erreur.', 'err'); },
-    });
+    const key = `liber-${pay.id}`;
+    this.setLoading(key);
+    this.escrow.libererPaiement(pay.bail, pay.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next:  () => { this.clearLoading(key); this.closeModal(); this.charger(); this.toast('Paiement libéré.', 'ok'); },
+        error: e  => { this.clearLoading(key); this.submitting = false; this.cdr.detectChanges(); this.toast(e?.error?.detail ?? 'Erreur.', 'err'); },
+      });
   }
 
   contesterPaiement(pay: Paiement) {
-    console.log('[PaymentsSection] contesterPaiement', pay.id);
-    this.submitting.set(true);
-    this.escrow.contesterPaiement(this.bailId, pay.id, {}).subscribe({
-      next: () => { console.log('[PaymentsSection] contesterPaiement success'); this.closeModal(); this.charger(); this.toast('Contestation enregistrée.', 'ok'); },
-      error: e => { console.error('[PaymentsSection] contesterPaiement error', e); this.submitting.set(false); this.toast(e?.error?.detail ?? 'Erreur.', 'err'); },
-    });
+    const key = `contest-${pay.id}`;
+    this.setLoading(key);
+    this.escrow.contesterPaiement(pay.bail, pay.id, {})
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next:  () => { this.clearLoading(key); this.closeModal(); this.charger(); this.toast('Contestation enregistrée.', 'ok'); },
+        error: e  => { this.clearLoading(key); this.submitting = false; this.cdr.detectChanges(); this.toast(e?.error?.detail ?? 'Erreur.', 'err'); },
+      });
   }
 
   telechargerQuittance(pay: Paiement) {
-    console.log('[PaymentsSection] telechargerQuittance', pay.id);
-    this.escrow.downloadQuittance(this.bailId, pay.id).subscribe({
-      next: blob => {
-        console.log('[PaymentsSection] downloadQuittance blob reçu', blob);
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `quittance_${pay.mois_concerne?.slice(0, 7) ?? pay.id}.pdf`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-      },
-      error: e => { console.error('[PaymentsSection] downloadQuittance error', e); this.toast(e?.error?.detail ?? 'Erreur téléchargement quittance', 'err'); }
-    });
+    const key = `download-quittance-${pay.id}`;
+    this.setLoading(key);
+    this.escrow.downloadQuittance(pay.bail, pay.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: blob => {
+          this.clearLoading(key);
+          const a    = document.createElement('a');
+          a.href     = URL.createObjectURL(blob);
+          a.download = `quittance_${pay.mois_concerne?.slice(0, 7) ?? pay.id}.pdf`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        },
+        error: e => { this.clearLoading(key); this.toast(e?.error?.detail ?? 'Erreur téléchargement quittance.', 'err'); },
+      });
   }
 
   envoyerQuittanceEmail() {
-    const pay = this.selectedPay();
+    const pay = this.selectedPay;
     if (!pay) return;
-    console.log('[PaymentsSection] envoyerQuittanceEmail', pay.id);
-    this.submitting.set(true);
-    this.escrow.envoyerQuittanceEmail(this.bailId, pay.id).subscribe({
-      next: () => { console.log('[PaymentsSection] envoyerQuittanceEmail success'); this.closeModal(); this.toast('Quittance envoyée par email.', 'ok'); },
-      error: e => { console.error('[PaymentsSection] envoyerQuittanceEmail error', e); this.submitting.set(false); this.toast(e?.error?.detail ?? 'Erreur.', 'err'); }
-    });
+    const key = `email-quittance-${pay.id}`;
+    this.setLoading(key);
+    this.escrow.envoyerQuittanceEmail(pay.bail, pay.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next:  () => { this.clearLoading(key); this.closeModal(); this.toast('Quittance envoyée par email.', 'ok'); },
+        error: e  => { this.clearLoading(key); this.submitting = false; this.cdr.detectChanges(); this.toast(e?.error?.detail ?? 'Erreur.', 'err'); },
+      });
   }
 
   telechargerReleve() {
-    const an = this.filtreAnnee();
-    console.log('[PaymentsSection] telechargerReleve', { bailId: this.bailId, annee: an });
-    this.escrow.downloadReleve(this.bailId, an).subscribe({
-      next: blob => {
-        console.log('[PaymentsSection] downloadReleve blob reçu', blob);
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `releve_bail_${this.bailId}${an ? '_' + an : ''}.pdf`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-      },
-      error: e => { console.error('[PaymentsSection] downloadReleve error', e); this.toast(e?.error?.detail ?? 'Erreur téléchargement relevé', 'err'); }
-    });
+    const key = `download-releve-${this.filtreAnnee ?? 'all'}`;
+    this.setLoading(key);
+    this.escrow.downloadReleveGlobal(this.filtreAnnee)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: blob => {
+          this.clearLoading(key);
+          const a    = document.createElement('a');
+          a.href     = URL.createObjectURL(blob);
+          a.download = `releve${this.filtreAnnee ? '_' + this.filtreAnnee : ''}.pdf`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        },
+        error: e => { this.clearLoading(key); this.toast(e?.error?.detail ?? 'Erreur téléchargement relevé.', 'err'); },
+      });
   }
 
   envoyerReleveEmail() {
-    console.log('[PaymentsSection] envoyerReleveEmail', { annee: this.emailForm.annee, email: this.emailForm.email });
-    this.submitting.set(true);
-    const payload = { annee: this.emailForm.annee ? +this.emailForm.annee : undefined, email: this.emailForm.email || undefined };
-    this.escrow.envoyerReleveEmail(this.bailId, payload).subscribe({
-      next: () => { console.log('[PaymentsSection] envoyerReleveEmail success'); this.closeModal(); this.toast('Relevé envoyé par email.', 'ok'); },
-      error: e => { console.error('[PaymentsSection] envoyerReleveEmail error', e); this.submitting.set(false); this.toast(e?.error?.detail ?? 'Erreur.', 'err'); }
-    });
+    const key = `email-releve-${this.emailForm.annee || 'all'}`;
+    this.setLoading(key);
+    const payload = {
+      annee: this.emailForm.annee ? +this.emailForm.annee : undefined,
+      email: this.emailForm.email || undefined,
+    };
+    this.escrow.envoyerReleveEmailGlobal(payload)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next:  () => { this.clearLoading(key); this.closeModal(); this.toast('Relevé envoyé par email.', 'ok'); },
+        error: e  => { this.clearLoading(key); this.submitting = false; this.cdr.detectChanges(); this.toast(e?.error?.detail ?? 'Erreur.', 'err'); },
+      });
   }
 
-  // ── Helpers ─────────────────────────────────────��─────────────────────────
-  fmt(n: number)  { return new Intl.NumberFormat('fr-FR').format(n) + '\u202fFCFA'; }
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  fmt(n: number): string {
+    if (n == null) return '—';
+    return new Intl.NumberFormat('fr-FR').format(n) + '\u202fFCFA';
+  }
+
+  fmtDate(dateStr?: string | null): string {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr.slice(0, 10));
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  }
+
+  moisLabel(moisConcerne?: string): string {
+    if (!moisConcerne) return '—';
+    const str = moisConcerne.length >= 7 ? moisConcerne.slice(0, 7) + '-01' : moisConcerne;
+    const d   = new Date(str);
+    if (isNaN(d.getTime())) return moisConcerne;
+    return d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  }
+
+  moisCourt(moisConcerne?: string): string {
+    if (!moisConcerne) return '—';
+    const str = moisConcerne.length >= 7 ? moisConcerne.slice(0, 7) + '-01' : moisConcerne;
+    const d   = new Date(str);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('fr-FR', { month: 'short' });
+  }
+
+  moisAnnee(moisConcerne?: string): string {
+    return moisConcerne?.slice(0, 4) ?? '';
+  }
+
   slbl(s: string) { return this.escrow.statutLabel(s); }
   scls(s: string) { return this.escrow.statutClasses(s); }
 
-  canDownloadQuittance(p: Paiement)  { return p.statut === 'confirme'; }
-  canConfirmer(p: Paiement)          { return this.isProprietaire() && p.statut === 'paye' && p.escrow?.peut_liberer; }
-  canContester(p: Paiement)          { return this.isProprietaire() && p.escrow?.peut_contester; }
+  canDownloadQuittance(p: Paiement) { return p.statut === 'confirme'; }
+
+  canConfirmer(p: Paiement)  { return this.isAdmin && p.statut === 'paye' && p.escrow?.peut_liberer; }
+  canContester(p: Paiement)  { return (this.isProprietaire || this.isLocataire) && p.escrow?.peut_contester; }
 
   private _moisCourant(): string {
     const d = new Date();
@@ -274,8 +320,14 @@ export class PaymentsSectionComponent implements OnInit, OnChanges {
   }
 
   private toast(msg: string, type: 'ok' | 'err') {
-    this.toastMsg.set(msg);
-    this.toastType.set(type);
-    setTimeout(() => this.toastMsg.set(null), 4000);
+    this.toastMsg  = msg;
+    this.toastType = type;
+    this.cdr.detectChanges();
+    setTimeout(() => { this.toastMsg = null; this.cdr.detectChanges(); }, 4000);
+  }
+
+  // trackBy pour la liste
+  trackById(_i: number, item: Paiement) {
+    return item.id;
   }
 }

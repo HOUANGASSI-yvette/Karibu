@@ -1,108 +1,101 @@
-<!-- payments-section.html -->
+<!-- TOAST local -->
+<div *ngIf="toastMsg" class="fixed top-5 right-5 z-[70] flex items-center gap-2.5 px-4 py-3 border text-sm shadow-sm"
+     [ngClass]="toastType === 'ok' ? 'bg-white border-green-200 text-green-800' : 'bg-white border-red-200 text-red-700'">
+  <ng-container *ngIf="toastType === 'ok'; else errIcon">
+    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+    </svg>
+  </ng-container>
+  <ng-template #errIcon>
+    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
+  </ng-template>
+  <div>{{ toastMsg }}</div>
+</div>
 
-<!-- ── Toast ───────────────────────────────────────────────────────────── -->
-@if (toastMsg()) {
-  <div class="fixed top-5 right-5 z-[70] flex items-center gap-2.5 px-4 py-3 border text-sm shadow-sm transition-all"
-       [class]="toastType() === 'ok'
-         ? 'bg-white border-green-200 text-green-800'
-         : 'bg-white border-red-200 text-red-700'">
-    @if (toastType() === 'ok') {
-      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-      </svg>
-    } @else {
-      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-      </svg>
-    }
-    {{ toastMsg() }}
-  </div>
-}
+<!-- LOADING -->
+<div *ngIf="loading" class="flex items-center justify-center py-20">
+  <span class="w-5 h-5 border-2 border-stone-200 border-t-stone-600 rounded-full animate-spin"></span>
+  <span class="ml-3 text-sm text-stone-400">Chargement…</span>
+</div>
 
-<!-- ── Loader ──────────────────────────────────────────────────────────── -->
-@if (loading()) {
-  <div class="flex items-center justify-center py-20">
-    <span class="w-5 h-5 border-2 border-stone-200 border-t-stone-600 rounded-full animate-spin"></span>
-    <span class="ml-3 text-sm text-stone-400">Chargement…</span>
-  </div>
-}
+<!-- ERROR -->
+<div *ngIf="error" class="px-5 py-4 bg-red-50 border border-red-100 text-red-700 text-sm flex items-center justify-between">
+  <div>{{ error }}</div>
+  <button (click)="charger()" class="text-xs px-3 py-1 bg-white border rounded">Réessayer</button>
+</div>
 
-@if (error()) {
-  <div class="px-5 py-4 bg-red-50 border border-red-100 text-red-700 text-sm flex items-center justify-between">
-    <div>{{ error() }}</div>
-    <div>
-      <button (click)="charger()" class="text-xs px-3 py-1 bg-white border rounded">Réessayer</button>
-    </div>
-  </div>
-}
+<!-- CONTENT -->
+<div *ngIf="!loading">
 
-@if (!loading()) {
-
-  <!-- ── En-tête + actions globales ─────────────────────────────────────── -->
   <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
     <div>
       <h2 class="text-xl font-light text-stone-900 tracking-tight">Paiements</h2>
       <p class="text-stone-400 text-xs mt-0.5">
-        @if (isLocataire())    { Vos loyers et quittances }
-        @if (isProprietaire()) { Loyers reçus · libération escrow }
-        @if (isAdmin())        { Vue administrateur · tous les paiements }
+        <ng-container *ngIf="isLocataire">Vos loyers et quittances</ng-container>
+        <ng-container *ngIf="isProprietaire">Loyers reçus · libération escrow</ng-container>
+        <ng-container *ngIf="isAdmin">Vue administrateur · tous les paiements</ng-container>
       </p>
     </div>
 
-    <div class="flex flex-wrap gap-2">
-      <!-- Locataire : payer -->
-      @if (isLocataire()) {
-        <button (click)="openModal('payer')"
-                class="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white text-xs font-medium tracking-wide hover:bg-stone-700 transition-colors">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-          </svg>
-          Effectuer un paiement
-        </button>
-      }
-      <!-- Proprio / Admin : relevé -->
-      @if (isProprietaire() || isAdmin()) {
-        <button (click)="telechargerReleve()"
-                class="inline-flex items-center gap-2 px-3 py-2 border border-stone-300 text-stone-600 text-xs hover:bg-stone-50 transition-colors">
+    <div class="flex flex-wrap gap-2 items-center">
+      <!-- Effectuer un paiement (locataire) -->
+      <button *ngIf="isLocataire" (click)="openModal('payer')"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-stone-900 text-white text-xs font-medium tracking-wide hover:bg-stone-700 transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        Effectuer un paiement
+      </button>
+
+
+      <!-- Relevé / envoyer relevé (propriétaire/admin) -->
+      <button *ngIf="isProprietaire || isAdmin" (click)="telechargerReleve()"
+              class="inline-flex items-center gap-2 px-3 py-2 border border-stone-300 text-stone-600 text-xs hover:bg-stone-50 transition-colors">
+        <ng-container *ngIf="!isLoading('download-releve-' + (filtreAnnee ?? 'all')); else relGenerating">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
           </svg>
           Relevé PDF
-        </button>
-        <button (click)="openModal('releve-email')"
-                class="inline-flex items-center gap-2 px-3 py-2 border border-stone-300 text-stone-600 text-xs hover:bg-stone-50 transition-colors">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-          </svg>
-          Envoyer le relevé
-        </button>
-      }
+        </ng-container>
+        <ng-template #relGenerating>
+          <span class="w-4 h-4 border-2 border-stone-300 border-t-white rounded-full animate-spin"></span>
+          <span class="text-xs ml-2">Génération…</span>
+        </ng-template>
+      </button>
+
+      <button *ngIf="isProprietaire || isAdmin" (click)="openModal('releve-email')"
+              class="inline-flex items-center gap-2 px-3 py-2 border border-stone-300 text-stone-600 text-xs hover:bg-stone-50 transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+        Envoyer le relevé
+      </button>
     </div>
   </div>
 
-  <!-- ── Cartes récap ────────────────────────────────────────────────────── -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
     <div class="bg-white border border-stone-200 p-4">
       <p class="text-[10px] text-stone-400 uppercase tracking-widest mb-1.5">Confirmé</p>
-      <p class="text-base font-semibold text-green-700 leading-none">{{ fmt(totaux().confirme) }}</p>
+      <p class="text-base font-semibold text-green-700 leading-none">{{ fmt(totaux.confirme) }}</p>
     </div>
     <div class="bg-white border border-stone-200 p-4">
       <p class="text-[10px] text-stone-400 uppercase tracking-widest mb-1.5">En escrow</p>
-      <p class="text-base font-semibold text-blue-700 leading-none">{{ fmt(totaux().en_escrow) }}</p>
+      <p class="text-base font-semibold text-blue-700 leading-none">{{ fmt(totaux.en_escrow) }}</p>
     </div>
     <div class="bg-white border border-stone-200 p-4">
       <p class="text-[10px] text-stone-400 uppercase tracking-widest mb-1.5">En attente</p>
-      <p class="text-base font-semibold text-amber-700 leading-none">{{ totaux().en_attente }}</p>
+      <p class="text-base font-semibold text-amber-700 leading-none">{{ totaux.en_attente }}</p>
     </div>
     <div class="bg-white border border-stone-200 p-4">
       <p class="text-[10px] text-stone-400 uppercase tracking-widest mb-1.5">En retard</p>
-      <p class="text-base font-semibold text-red-600 leading-none">{{ totaux().en_retard }}</p>
+      <p class="text-base font-semibold text-red-600 leading-none">{{ totaux.en_retard }}</p>
     </div>
   </div>
 
-  <!-- ── Filtres ─────────────────────────────────────────────────────────── -->
   <div class="flex flex-wrap gap-2 mb-4">
-    <select [ngModel]="filtreStatut()" (ngModelChange)="filtreStatut.set($event)"
+    <select [(ngModel)]="filtreStatut"
             class="border border-stone-200 text-xs px-3 py-1.5 text-stone-600 bg-white focus:outline-none focus:border-stone-400">
       <option value="tous">Tous les statuts</option>
       <option value="en_attente">En attente</option>
@@ -112,337 +105,263 @@
       <option value="rembourse">Remboursé</option>
     </select>
 
-    @if (anneesDispo().length > 1) {
-      <select [ngModel]="filtreAnnee()" (ngModelChange)="filtreAnnee.set($event ? +$event : null)"
-              class="border border-stone-200 text-xs px-3 py-1.5 text-stone-600 bg-white focus:outline-none focus:border-stone-400">
-        <option [ngValue]="null">Toutes les années</option>
-        @for (a of anneesDispo(); track a) {
-          <option [ngValue]="a">{{ a }}</option>
-        }
-      </select>
-    }
+    <select *ngIf="anneesDispo.length > 1" [(ngModel)]="filtreAnnee"
+            class="border border-stone-200 text-xs px-3 py-1.5 text-stone-600 bg-white focus:outline-none focus:border-stone-400">
+      <option [ngValue]="null">Toutes les années</option>
+      <option *ngFor="let a of anneesDispo" [ngValue]="a">{{ a }}</option>
+    </select>
 
-    <span class="text-xs text-stone-400 self-center ml-1">
-    {{ paiementsFiltres().length }} paiement(s)
-  </span>
+    <span class="text-xs text-stone-400 self-center ml-1">{{ paiementsFiltres.length }} paiement(s)</span>
   </div>
 
-  <!-- ── Liste des paiements ─────────────────────────────────────────────── -->
   <div class="bg-white border border-stone-200 overflow-hidden">
     <div class="px-5 py-3 border-b border-stone-100">
       <h3 class="text-xs font-medium text-stone-500 uppercase tracking-widest">Historique</h3>
     </div>
 
-    @if (!paiementsFiltres().length) {
-      <div class="px-5 py-14 text-center">
-        <p class="text-stone-400 text-sm">Aucun paiement pour cette sélection.</p>
-      </div>
-    }
+    <div *ngIf="!paiementsFiltres.length" class="px-5 py-14 text-center">
+      <p class="text-stone-400 text-sm">Aucun paiement pour cette sélection.</p>
+    </div>
 
     <div class="divide-y divide-stone-100">
-      @for (pay of paiementsFiltres(); track pay.id) {
-        <div class="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-stone-50/70 transition-colors">
-
-          <!-- Badge mois -->
-          <div class="w-10 h-10 bg-stone-100 border border-stone-200 flex flex-col items-center justify-center flex-shrink-0 select-none">
-          <span class="text-[9px] text-stone-400 uppercase leading-none">
-            {{ pay.mois_concerne ? (pay.mois_concerne | date:'MMM':'':'fr') : '—' }}
-          </span>
-            <span class="text-sm font-bold text-stone-700 leading-none">
-            {{ pay.mois_concerne ? pay.mois_concerne.slice(0,4) : '' }}
-          </span>
-          </div>
-
-          <!-- Info -->
-          <div class="flex-1 min-w-[140px]">
-            <p class="text-sm font-medium text-stone-900">
-              {{ pay.mois_concerne ? (pay.mois_concerne + '-01' | date:'MMMM yyyy':'':'fr') : '—' }}
-            </p>
-            @if (pay.tx_hash_paiement) {
-              <p class="text-[11px] text-stone-400 font-mono truncate max-w-[200px]">{{ pay.tx_hash_paiement }}</p>
-            }
-            @if (pay.note) {
-              <p class="text-[11px] text-stone-400 truncate max-w-[220px]">{{ pay.note.split('|')[0].trim() }}</p>
-            }
-          </div>
-
-          <!-- Montant + statut + date -->
-          <div class="flex items-center gap-2.5 flex-wrap">
-            <span class="text-sm font-semibold text-stone-900">{{ fmt(pay.montant) }}</span>
-            <span class="text-[11px] px-2 py-0.5 border" [class]="scls(pay.statut)">
-            {{ slbl(pay.statut) }}
-          </span>
-            @if (pay.date_paiement) {
-              <span class="text-[11px] text-stone-400">{{ pay.date_paiement | date:'dd/MM/yy' }}</span>
-            }
-          </div>
-
-          <!-- Commission (admin) -->
-          @if (isAdmin() && pay.commission) {
-            <div class="text-[11px] text-stone-400 text-right leading-tight">
-              <span class="block">Comm. {{ pay.commission.montant_cfa | number:'1.0-0' }} FCFA</span>
-              <span class="block">Net {{ pay.commission.montant_net | number:'1.0-0' }} FCFA</span>
-            </div>
-          }
-
-          <!-- ── Actions selon rôle + statut ─────────────────────────── -->
-          <div class="flex items-center gap-1.5 flex-shrink-0 ml-auto">
-
-            <!-- LOCATAIRE : quittance si confirmé -->
-            @if (isLocataire() && canDownloadQuittance(pay)) {
-              <button (click)="telechargerQuittance(pay)"
-                      title="Télécharger la quittance"
-                      class="px-3 py-1.5 text-[11px] border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors flex items-center gap-1.5">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                </svg>
-                Quittance
-              </button>
-              <button (click)="openModal('quittance-email', pay)"
-                      title="Envoyer par email"
-                      class="px-2.5 py-1.5 text-[11px] border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                </svg>
-              </button>
-            }
-
-            <!-- PROPRIÉTAIRE : libérer escrow -->
-            @if (canConfirmer(pay)) {
-              <button (click)="openModal('confirmer', pay)"
-                      class="px-3 py-1.5 text-[11px] bg-stone-900 text-white hover:bg-stone-700 transition-colors flex items-center gap-1.5">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                </svg>
-                Libérer
-              </button>
-            }
-
-            <!-- PROPRIÉTAIRE : contester -->
-            @if (canContester(pay)) {
-              <button (click)="contesterPaiement(pay)"
-                      class="px-2.5 py-1.5 text-[11px] border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
-                Contester
-              </button>
-            }
-
-            <!-- PROPRIÉTAIRE / ADMIN : quittance si confirmé -->
-            @if ((isProprietaire() || isAdmin()) && canDownloadQuittance(pay)) {
-              <button (click)="telechargerQuittance(pay)"
-                      title="Quittance PDF"
-                      class="px-2.5 py-1.5 text-[11px] border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                </svg>
-              </button>
-            }
-
-            <!-- Blockchain link si tx_hash réel -->
-            @if (escrow.polygonscanUrl(pay.tx_hash_paiement); as url) {
-              <a [href]="url" target="_blank" rel="noopener"
-                 title="Voir sur Polygonscan"
-                 class="px-2.5 py-1.5 border border-stone-200 text-stone-400 hover:text-stone-700 hover:border-stone-400 transition-colors">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                </svg>
-              </a>
-            }
-
-          </div>
+      <div *ngFor="let pay of paiementsFiltres; trackBy: trackById" class="flex flex-wrap items-center gap-3 px-5 py-4 hover:bg-stone-50/70 transition-colors">
+        <div class="w-10 h-10 bg-stone-100 border border-stone-200 flex flex-col items-center justify-center flex-shrink-0 select-none">
+          <span class="text-[9px] text-stone-400 uppercase leading-none">{{ moisCourt(pay.mois_concerne) }}</span>
+          <span class="text-sm font-bold text-stone-700 leading-none">{{ moisAnnee(pay.mois_concerne) }}</span>
         </div>
-      }
+
+        <div class="flex-1 min-w-[140px]">
+          <p class="text-sm font-medium text-stone-900">{{ moisLabel(pay.mois_concerne) }}</p>
+          <p *ngIf="pay.tx_hash_paiement" class="text-[11px] text-stone-400 font-mono truncate max-w-[200px]">{{ pay.tx_hash_paiement }}</p>
+          <p *ngIf="pay.note" class="text-[11px] text-stone-400 truncate max-w-[220px]">{{ pay.note.split('|')[0].trim() }}</p>
+        </div>
+
+        <div class="flex items-center gap-2.5 flex-wrap">
+          <span class="text-sm font-semibold text-stone-900">{{ fmt(pay.montant) }}</span>
+          <span class="text-[11px] px-2 py-0.5 border" [class]="scls(pay.statut)">{{ slbl(pay.statut) }}</span>
+          <span *ngIf="pay.date_paiement" class="text-[11px] text-stone-400">{{ fmtDate(pay.date_paiement) }}</span>
+        </div>
+
+        <div *ngIf="isAdmin && pay.commission" class="text-[11px] text-stone-400 text-right leading-tight">
+          <span class="block">Comm. {{ pay.commission.montant_cfa | number:'1.0-0' }} FCFA</span>
+          <span class="block">Net {{ pay.commission.montant_net | number:'1.0-0' }} FCFA</span>
+        </div>
+
+        <div class="flex items-center gap-1.5 flex-shrink-0 ml-auto">
+          <!-- Quittance download (locataire or proprietaire) -->
+          <button *ngIf="canDownloadQuittance(pay)" (click)="telechargerQuittance(pay)" title="Télécharger la quittance"
+                  class="px-3 py-1.5 text-[11px] border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors flex items-center gap-1.5">
+            <ng-container *ngIf="!isLoading('download-quittance-' + pay.id); else downloading">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              </svg>
+              <span>Quittance</span>
+            </ng-container>
+            <ng-template #downloading>
+              <span class="w-4 h-4 border-2 border-stone-300 border-t-white rounded-full animate-spin"></span>
+              <span class="text-sm ml-2">Téléchargement…</span>
+            </ng-template>
+          </button>
+
+          <!-- Envoyer quittance par email -->
+          <button *ngIf="isLocataire && canDownloadQuittance(pay)" (click)="openModal('quittance-email', pay)" title="Envoyer par email"
+                  class="px-2.5 py-1.5 text-[11px] border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+          </button>
+
+          <!-- Libérer (proprietaire/admin) -->
+          <button *ngIf="canConfirmer(pay)" (click)="openModal('confirmer', pay)"
+                  class="px-3 py-1.5 text-[11px] bg-stone-900 text-white hover:bg-stone-700 transition-colors flex items-center gap-1.5">
+            <ng-container *ngIf="!isLoading('liber-' + pay.id); else liberating">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+              Libérer
+            </ng-container>
+            <ng-template #liberating>
+              <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <span class="text-sm ml-2">Traitement…</span>
+            </ng-template>
+          </button>
+
+          <!-- Contester -->
+          <button *ngIf="canContester(pay)" (click)="contesterPaiement(pay)"
+                  class="px-2.5 py-1.5 text-[11px] border border-red-200 text-red-600 hover:bg-red-50 transition-colors">
+            <ng-container *ngIf="!isLoading('contest-' + pay.id); else contesting">
+              Contester
+            </ng-container>
+            <ng-template #contesting>
+              <span class="w-4 h-4 border-2 border-red-400 border-t-white rounded-full animate-spin inline-block"></span>
+              <span class="text-sm ml-2">En cours…</span>
+            </ng-template>
+          </button>
+
+          <!-- Quittance PDF (proprietaire/admin) -->
+          <button *ngIf="(isProprietaire || isAdmin) && canDownloadQuittance(pay)" (click)="telechargerQuittance(pay)" title="Quittance PDF"
+                  class="px-2.5 py-1.5 text-[11px] border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            </svg>
+          </button>
+
+          <!-- Polygonscan link -->
+          <a *ngIf="escrow.polygonscanUrl(pay.tx_hash_paiement) as url" [href]="url" target="_blank" rel="noopener" title="Voir sur Polygonscan"
+             class="px-2.5 py-1.5 border border-stone-200 text-stone-400 hover:text-stone-700 hover:border-stone-400 transition-colors">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 
-}<!-- fin !loading() -->
+  <!-- ════ MODALS ════ -->
+  <div *ngIf="modal" class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4" (click)="closeModal()">
+    <div class="bg-white border border-stone-200 w-full max-w-sm shadow-xl" (click)="$event.stopPropagation()">
 
-
-<!-- ════════════════════════════════════════════════════════════════════════
-     MODALS
-     ════════════════════════════════════════════════════════════════════ -->
-
-@if (modal()) {
-  <div class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4"
-       (click)="closeModal()">
-    <div class="bg-white border border-stone-200 w-full max-w-sm shadow-xl"
-         (click)="$event.stopPropagation()">
-
-      <!-- Header modal -->
       <div class="flex items-center justify-between px-6 py-4 border-b border-stone-100">
         <h3 class="text-sm font-medium text-stone-900">
-          @if (modal() === 'payer')           { Effectuer un paiement }
-          @if (modal() === 'confirmer')       { Libérer le paiement escrow }
-          @if (modal() === 'quittance-email') { Envoyer la quittance }
-          @if (modal() === 'releve-email')    { Envoyer le relevé }
+          <ng-container *ngIf="modal === 'payer'">Effectuer un paiement</ng-container>
+          <ng-container *ngIf="modal === 'confirmer'">Libérer le paiement escrow</ng-container>
+          <ng-container *ngIf="modal === 'quittance-email'">Envoyer la quittance</ng-container>
+          <ng-container *ngIf="modal === 'releve-email'">Envoyer le relevé</ng-container>
         </h3>
-        <button (click)="closeModal()"
-                class="text-stone-400 hover:text-stone-700 transition-colors">
+        <button (click)="closeModal()" class="text-stone-400 hover:text-stone-700">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
       </div>
 
-      <!-- ── MODAL : Payer ──────────────────────────────────────────── -->
-      @if (modal() === 'payer') {
-        <div class="p-6 space-y-4">
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs text-stone-500 mb-1">Mois concerné</label>
-              <input type="month"
-                     [(ngModel)]="payForm.mois_concerne"
-                     class="w-full border border-stone-200 px-3 py-2 text-sm text-stone-900 bg-white focus:outline-none focus:border-stone-500"/>
-            </div>
-            <div>
-              <label class="block text-xs text-stone-500 mb-1">Montant (FCFA)</label>
-              <input type="number" min="0"
-                     [(ngModel)]="payForm.montant"
-                     class="w-full border border-stone-200 px-3 py-2 text-sm text-stone-900 focus:outline-none focus:border-stone-500"/>
-            </div>
-          </div>
-
+      <!-- PAYER -->
+      <div *ngIf="modal === 'payer'" class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs text-stone-500 mb-1">Méthode</label>
-            <div class="grid grid-cols-4 gap-2">
-              @for (m of METHOD_OPTIONS; track m[0]) {
-                <button (click)="payForm.methode = m[0]"
-                        [class]="payForm.methode === m[0]
-                          ? 'border border-stone-900 bg-stone-900 text-white text-[11px] py-2 font-medium transition-colors'
-                          : 'border border-stone-200 text-stone-600 text-[11px] py-2 hover:border-stone-400 transition-colors'">
-                  {{ m[1] }}
-                </button>
-              }
-            </div>
+            <label class="block text-xs text-stone-500 mb-1">Mois concerné</label>
+            <input type="month" [(ngModel)]="payForm.mois_concerne"
+                   class="w-full border border-stone-200 px-3 py-2 text-sm text-stone-900 bg-white focus:outline-none focus:border-stone-500"/>
           </div>
-
-          @if (payForm.methode !== 'especes') {
-            <div>
-              <label class="block text-xs text-stone-500 mb-1">Numéro de téléphone</label>
-              <input type="tel"
-                     [(ngModel)]="payForm.numero_telephone"
-                     placeholder="+228 90 00 00 00"
-                     class="w-full border border-stone-200 px-3 py-2 text-sm text-stone-900 focus:outline-none focus:border-stone-500"/>
-            </div>
-          }
-
           <div>
-            <label class="block text-xs text-stone-500 mb-1">Note (optionnel)</label>
-            <input type="text"
-                   [(ngModel)]="payForm.note"
+            <label class="block text-xs text-stone-500 mb-1">Montant (FCFA)</label>
+            <input type="number" min="0" [(ngModel)]="payForm.montant"
                    class="w-full border border-stone-200 px-3 py-2 text-sm text-stone-900 focus:outline-none focus:border-stone-500"/>
           </div>
-
-          <button (click)="soumettrePaiement()"
-                  [disabled]="submitting() || !payForm.montant || !payForm.mois_concerne"
-                  class="w-full py-3 bg-stone-900 text-white text-sm font-medium hover:bg-stone-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-            @if (submitting()) {
-              <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            }
-            Confirmer le paiement
-          </button>
         </div>
-      }
 
-      <!-- ── MODAL : Libérer escrow (proprio) ──────────────────────── -->
-      @if (modal() === 'confirmer' && selectedPay(); as pay) {
-        <div class="p-6 space-y-4">
-          <div class="bg-stone-50 border border-stone-200 divide-y divide-stone-100 text-sm">
-            <div class="flex justify-between px-4 py-2.5">
-              <span class="text-stone-400">Période</span>
-              <span class="font-medium text-stone-900">
-                {{ pay.mois_concerne + '-01' | date:'MMMM yyyy':'':'fr' }}
-              </span>
-            </div>
-            <div class="flex justify-between px-4 py-2.5">
-              <span class="text-stone-400">Reçu le</span>
-              <span class="font-medium text-stone-900">{{ pay.date_paiement | date:'dd/MM/yyyy' }}</span>
-            </div>
-            @if (pay.commission) {
-              <div class="flex justify-between px-4 py-2.5">
-                <span class="text-stone-400">Commission Karibu</span>
-                <span class="text-stone-600">{{ pay.commission.montant_cfa | number:'1.0-0' }} FCFA</span>
-              </div>
-              <div class="flex justify-between px-4 py-2.5">
-                <span class="text-stone-400">Net pour vous</span>
-                <span class="font-semibold text-stone-900">{{ pay.commission.montant_net | number:'1.0-0' }} FCFA</span>
-              </div>
-            }
-            <div class="flex justify-between px-4 py-2.5 bg-stone-100">
-              <span class="text-stone-500">Total payé</span>
-              <span class="font-bold text-stone-900">{{ fmt(pay.montant) }}</span>
-            </div>
+        <div>
+          <label class="block text-xs text-stone-500 mb-1">Méthode</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button *ngFor="let m of METHOD_OPTIONS" (click)="payForm.methode = m[0]"
+                    [ngClass]="payForm.methode === m[0]
+                      ? 'border border-stone-900 bg-stone-900 text-white text-[11px] py-2 font-medium transition-colors'
+                      : 'border border-stone-200 text-stone-600 text-[11px] py-2 hover:border-stone-400 transition-colors'">
+              {{ m[1] }}
+            </button>
           </div>
-
-          <p class="text-xs text-stone-400 leading-relaxed">
-            En libérant ce paiement, vous confirmez avoir reçu le loyer.
-            Une quittance sera générée automatiquement.
-          </p>
-
-          <button (click)="libererPaiement(pay)"
-                  class="w-full py-3 bg-stone-900 text-white text-sm font-medium hover:bg-stone-700 transition-colors flex items-center justify-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-            </svg>
-            Libérer le paiement
-          </button>
         </div>
-      }
 
-      <!-- ── MODAL : Envoyer quittance email ────────────────────────── -->
-      @if (modal() === 'quittance-email' && selectedPay(); as pay) {
-        <div class="p-6 space-y-4">
-          <div class="bg-stone-50 border border-stone-100 px-4 py-3 text-xs text-stone-500 space-y-1">
-            <p>Période : <strong class="text-stone-700">{{ pay.mois_concerne + '-01' | date:'MMMM yyyy':'':'fr' }}</strong></p>
-            <p>Montant : <strong class="text-stone-700">{{ fmt(pay.montant) }}</strong></p>
-            <p class="pt-1 border-t border-stone-200">
-              Envoyée au locataire, propriétaire en copie.
-            </p>
+        <div *ngIf="payForm.methode !== 'especes'">
+          <label class="block text-xs text-stone-500 mb-1">Numéro de téléphone</label>
+          <input type="tel" [(ngModel)]="payForm.numero_telephone" placeholder="+228 90 00 00 00"
+                 class="w-full border border-stone-200 px-3 py-2 text-sm text-stone-900 focus:outline-none focus:border-stone-500"/>
+        </div>
+
+        <div>
+          <label class="block text-xs text-stone-500 mb-1">Note (optionnel)</label>
+          <input type="text" [(ngModel)]="payForm.note"
+                 class="w-full border border-stone-200 px-3 py-2 text-sm text-stone-900 focus:outline-none focus:border-stone-500"/>
+        </div>
+
+        <button (click)="soumettrePaiement()"
+                [disabled]="isLoading('soumettre') || !payForm.montant || !payForm.mois_concerne"
+                class="w-full py-3 bg-stone-900 text-white text-sm font-medium hover:bg-stone-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          <span *ngIf="isLoading('soumettre')" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          <span *ngIf="!isLoading('soumettre')">Confirmer le paiement</span>
+          <span *ngIf="isLoading('soumettre')">Traitement…</span>
+        </button>
+      </div>
+
+      <!-- CONFIRMER -->
+      <div *ngIf="modal === 'confirmer' && selectedPay" class="p-6 space-y-4">
+        <div class="bg-stone-50 border border-stone-200 divide-y divide-stone-100 text-sm">
+          <div class="flex justify-between px-4 py-2.5">
+            <span class="text-stone-400">Période</span>
+            <span class="font-medium text-stone-900">{{ moisLabel(selectedPay.mois_concerne) }}</span>
           </div>
-          <button (click)="envoyerQuittanceEmail()"
-                  [disabled]="submitting()"
-                  class="w-full py-3 bg-stone-900 text-white text-sm font-medium hover:bg-stone-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
-            @if (submitting()) {
-              <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            }
-            Envoyer par email
-          </button>
-        </div>
-      }
-
-      <!-- ── MODAL : Envoyer relevé email ──────────────────────────── -->
-      @if (modal() === 'releve-email') {
-        <div class="p-6 space-y-4">
-          <div>
-            <label class="block text-xs text-stone-500 mb-1">Période</label>
-            <select [(ngModel)]="emailForm.annee"
-                    class="w-full border border-stone-200 px-3 py-2 text-sm text-stone-700 bg-white focus:outline-none focus:border-stone-500">
-              <option value="">Historique complet</option>
-              @for (a of anneesDispo(); track a) {
-                <option [value]="a">{{ a }}</option>
-              }
-            </select>
+          <div class="flex justify-between px-4 py-2.5">
+            <span class="text-stone-400">Reçu le</span>
+            <span class="font-medium text-stone-900">{{ fmtDate(selectedPay.date_paiement) }}</span>
           </div>
-          @if (isAdmin()) {
-            <div>
-              <label class="block text-xs text-stone-500 mb-1">Destinataire (optionnel)</label>
-              <input type="email"
-                     [(ngModel)]="emailForm.email"
-                     placeholder="Laisser vide = propriétaire"
-                     class="w-full border border-stone-200 px-3 py-2 text-sm text-stone-900 focus:outline-none focus:border-stone-500"/>
-            </div>
-          }
-          <button (click)="envoyerReleveEmail()"
-                  [disabled]="submitting()"
-                  class="w-full py-3 bg-stone-900 text-white text-sm font-medium hover:bg-stone-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
-            @if (submitting()) {
-              <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            }
-            Envoyer le relevé
-          </button>
+          <div *ngIf="selectedPay.commission" class="flex justify-between px-4 py-2.5">
+            <span class="text-stone-400">Commission Karibu</span>
+            <span class="text-stone-600">{{ selectedPay.commission.montant_cfa | number:'1.0-0' }} FCFA</span>
+          </div>
+          <div *ngIf="selectedPay.commission" class="flex justify-between px-4 py-2.5">
+            <span class="text-stone-400">Net pour vous</span>
+            <span class="font-semibold text-stone-900">{{ selectedPay.commission.montant_net | number:'1.0-0' }} FCFA</span>
+          </div>
+          <div class="flex justify-between px-4 py-2.5 bg-stone-100">
+            <span class="text-stone-500">Total payé</span>
+            <span class="font-bold text-stone-900">{{ fmt(selectedPay.montant) }}</span>
+          </div>
         </div>
-      }
+        <p class="text-xs text-stone-400 leading-relaxed">
+          En libérant ce paiement, vous confirmez avoir reçu le loyer. Une quittance sera générée automatiquement.
+        </p>
+
+        <button (click)="libererPaiement(selectedPay)"
+                [disabled]="isLoading('liber-' + selectedPay.id)"
+                class="w-full py-3 bg-stone-900 text-white text-sm font-medium hover:bg-stone-700 transition-colors flex items-center justify-center gap-2">
+          <span *ngIf="isLoading('liber-' + selectedPay.id)" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          <span *ngIf="!isLoading('liber-' + selectedPay.id)">Libérer le paiement</span>
+          <span *ngIf="isLoading('liber-' + selectedPay.id)">Traitement…</span>
+        </button>
+      </div>
+
+      <!-- QUITTANCE EMAIL -->
+      <div *ngIf="modal === 'quittance-email' && selectedPay" class="p-6 space-y-4">
+        <div class="bg-stone-50 border border-stone-100 px-4 py-3 text-xs text-stone-500 space-y-1">
+          <p>Période : <strong class="text-stone-700">{{ moisLabel(selectedPay.mois_concerne) }}</strong></p>
+          <p>Montant : <strong class="text-stone-700">{{ fmt(selectedPay.montant) }}</strong></p>
+          <p class="pt-1 border-t border-stone-200">Envoyée au locataire, propriétaire en copie.</p>
+        </div>
+        <button (click)="envoyerQuittanceEmail()" [disabled]="isLoading('email-quittance-' + selectedPay.id)"
+                class="w-full py-3 bg-stone-900 text-white text-sm font-medium hover:bg-stone-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
+          <span *ngIf="isLoading('email-quittance-' + selectedPay.id)" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          <span *ngIf="!isLoading('email-quittance-' + selectedPay.id)">Envoyer par email</span>
+          <span *ngIf="isLoading('email-quittance-' + selectedPay.id)">Envoi…</span>
+        </button>
+      </div>
+
+      <!-- RELEVE EMAIL -->
+      <div *ngIf="modal === 'releve-email'" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs text-stone-500 mb-1">Période</label>
+          <select [(ngModel)]="emailForm.annee"
+                  class="w-full border border-stone-200 px-3 py-2 text-sm text-stone-700 bg-white focus:outline-none focus:border-stone-500">
+            <option value="">Historique complet</option>
+            <option *ngFor="let a of anneesDispo" [value]="a">{{ a }}</option>
+          </select>
+        </div>
+
+        <div *ngIf="isAdmin">
+          <label class="block text-xs text-stone-500 mb-1">Destinataire (optionnel)</label>
+          <input type="email" [(ngModel)]="emailForm.email" placeholder="Laisser vide = propriétaire"
+                 class="w-full border border-stone-200 px-3 py-2 text-sm text-stone-900 focus:outline-none focus:border-stone-500"/>
+        </div>
+
+        <button (click)="envoyerReleveEmail()" [disabled]="isLoading('email-releve-' + (emailForm.annee || 'all'))"
+                class="w-full py-3 bg-stone-900 text-white text-sm font-medium hover:bg-stone-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
+          <span *ngIf="isLoading('email-releve-' + (emailForm.annee || 'all'))" class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          <span *ngIf="!isLoading('email-releve-' + (emailForm.annee || 'all'))">Envoyer le relevé</span>
+          <span *ngIf="isLoading('email-releve-' + (emailForm.annee || 'all'))">Envoi…</span>
+        </button>
+      </div>
 
     </div>
   </div>
-}
+
+</div>

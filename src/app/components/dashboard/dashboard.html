@@ -41,8 +41,7 @@
       @if (activeSection === 'tenants') {
         <!-- tenants-section charge ses propres données -->
         <app-tenants-section
-          [tenants]="[]"
-          (sectionChange)="onSectionChange($event)">
+          (navigateToChat)="onNavigateToChat($event)">
         </app-tenants-section>
       }
 

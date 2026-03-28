@@ -89,12 +89,15 @@ export class EscrowPaymentService {
 
   constructor(private http: HttpClient) {}
 
+
   private url(bailId: number, ...segments: (string | number)[]): string {
-    return [this.base, 'bails', bailId, 'escrow', ...segments].join('/') + '/';
+    const base = this.base.replace(/\/$/, ''); // supprime trailing slash
+    return [base, 'bails', bailId, 'escrow', ...segments].join('/') + '/';
   }
 
   private rawUrl(...segments: (string | number)[]): string {
-    return [this.base, ...segments].join('/') + '/';
+    const base = this.base.replace(/\/$/, '');
+    return [base, ...segments].join('/') + '/';
   }
 
   private request<T>(obs: Observable<T>, tag = ''): Observable<T> {
@@ -184,6 +187,47 @@ export class EscrowPaymentService {
     console.debug('[EscrowPaymentService] envoyerReleveEmail URL:', url, 'payload:', payload);
     return this.request<any>(this.http.post(url, payload), `envoyerReleveEmail ${bailId}`);
   }
+
+
+
+  // ── Endpoints globaux (sans bail_id, basés sur le rôle) ──────────────────────
+
+  /** GET /bails/paiements/mes-paiements/ */
+  mesPaiements(): Observable<PaiementListResponse> {
+    const url = `${this.base.replace(/\/$/, '')}/bails/paiements/mes-paiements/`;
+    console.debug('[EscrowPaymentService] mesPaiements URL:', url);
+    return this.request<PaiementListResponse>(
+      this.http.get<PaiementListResponse>(url),
+      'mesPaiements'
+    );
+  }
+
+  /** GET /bails/releve-global/?annee=... -> blob */
+  downloadReleveGlobal(annee?: number | null): Observable<Blob> {
+    const base = `${this.base.replace(/\/$/, '')}/bails/releve-global/`;
+    const url  = annee ? `${base}?annee=${annee}` : base;
+    console.debug('[EscrowPaymentService] downloadReleveGlobal URL:', url);
+    return this.request<Blob>(
+      this.http.get(url, { responseType: 'blob' }),
+      `downloadReleveGlobal annee=${annee}`
+    );
+  }
+
+  /** POST /bails/releve-global-email/ */
+  envoyerReleveEmailGlobal(payload: { annee?: number; email?: string }): Observable<any> {
+    const url = `${this.base.replace(/\/$/, '')}/bails/releve-global-email/`;
+    console.debug('[EscrowPaymentService] envoyerReleveEmailGlobal URL:', url);
+    return this.request<any>(
+      this.http.post(url, payload),
+      'envoyerReleveEmailGlobal'
+    );
+  }
+
+
+
+
+
+
 
   // ─── Helpers UI ────────────────────────────────────────────────────────────
 
