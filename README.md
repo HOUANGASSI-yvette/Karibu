@@ -2,6 +2,8 @@
 
 Interface utilisateur moderne pour la plateforme de gestion immobilière Karibu. Application Angular 18 avec Tailwind CSS offrant une expérience utilisateur fluide et responsive pour propriétaires et locataires.
 
+![img_5.png](img_5.png)
+
 ## Table des matières
 
 - [Aperçu](#aperçu)
