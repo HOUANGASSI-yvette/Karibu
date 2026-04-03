@@ -5,18 +5,23 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../../shared/navbar/navbar';
-import { ChatService, ChatRoom, ChatMessage } from '../../services/chat.service';
+import { ChatService } from '../../services/chat.service';
+import { ChatRoom, ChatMessage } from '../../models/chat.models';
 import { ToastService } from '../../shared/toast.service';
 import { Subscription } from 'rxjs';
 import {
   LucideAngularModule,
   Send, Search, WifiOff, RefreshCw, FileText,
-  ChevronRight, ChevronDown, Home, X
+  ChevronRight, ChevronDown, Home, X, Paperclip
 } from 'lucide-angular';
 import { ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { BailModalComponent } from '../../shared/bail-modal/bail-modal.component';
+import { UserStatusComponent } from '../../shared/user-status/user-status.component';
+import { TypingIndicatorComponent } from '../../shared/typing-indicator/typing-indicator.component';
+import { FileUploadComponent } from '../../shared/file-upload/file-upload.component';
+import { MessageAttachmentComponent } from '../../shared/message-attachment/message-attachment.component';
 
 export interface RoomRequest {
   id: number;
@@ -29,7 +34,17 @@ export interface RoomRequest {
 @Component({
   selector: 'app-messages',
   standalone: true,
-  imports: [CommonModule, FormsModule, NavbarComponent, LucideAngularModule, BailModalComponent],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    NavbarComponent, 
+    LucideAngularModule, 
+    BailModalComponent,
+    UserStatusComponent,
+    TypingIndicatorComponent,
+    FileUploadComponent,
+    MessageAttachmentComponent
+  ],
   templateUrl: './messages.html',
   styleUrl: './messages.css',
 })
@@ -46,6 +61,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   readonly ChevronDownIcon = ChevronDown;
   readonly HomeIcon        = Home;
   readonly XIcon           = X;
+  readonly PaperclipIcon   = Paperclip;
 
   rooms:        ChatRoom[]    = [];
   messages:     ChatMessage[] = [];
@@ -62,8 +78,14 @@ export class MessagesComponent implements OnInit, OnDestroy {
   logementsOpen    = false;
 
   selectedBailId: number | null = null;
+  
+  // Upload & Typing
+  showFileUpload = false;
+  isOtherUserTyping = false;
+  private typingTimeout: any;
 
   private sub?: Subscription;
+  private typingSub?: Subscription;
   private routeSub?: Subscription;
 
   constructor(
@@ -83,6 +105,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.loadRooms(() => this.handleRoomQueryParam());
 
+    // S'abonner aux nouveaux messages
     this.sub = this.chatService.newMessage$.subscribe(msg => {
       if (!this.selectedRoom) return;
       if (this.messages.some(m => m.id === msg.id)) return;
@@ -94,6 +117,15 @@ export class MessagesComponent implements OnInit, OnDestroy {
       }
     });
 
+    // S'abonner aux indicateurs de frappe
+    this.typingSub = this.chatService.userTyping$.subscribe(typing => {
+      if (!this.selectedRoom) return;
+      if (typing.user_id === this.selectedRoom.other_user_id) {
+        this.isOtherUserTyping = typing.is_typing;
+        this.cdr.detectChanges();
+      }
+    });
+
     this.routeSub = this.route.queryParamMap.subscribe(() => {
       if (!this.isLoadingRooms) this.handleRoomQueryParam();
     });
@@ -101,7 +133,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.sub?.unsubscribe();
+    this.typingSub?.unsubscribe();
     this.routeSub?.unsubscribe();
+    if (this.typingTimeout) clearTimeout(this.typingTimeout);
     this.chatService.disconnectRoom();
   }
 
@@ -169,7 +203,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.messages        = [];
     this.cdr.detectChanges();
 
-    this.chatService.connectToRoom(room.id);
+    this.chatService.connectToRoom(room.id, room.other_user_id);
 
     this.chatService.getMessages(room.id).subscribe({
       next: msgs => {
@@ -249,6 +283,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       this.sendMessage();
+    } else {
+      // Déclencher typing indicator sur toute autre touche
+      this.onTyping();
     }
   }
 
@@ -256,6 +293,51 @@ export class MessagesComponent implements OnInit, OnDestroy {
     const ta = event.target as HTMLTextAreaElement;
     ta.style.height = 'auto';
     ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+  }
+
+  /** Gestion typing indicator */
+  onTyping() {
+    if (!this.selectedRoom) return;
+    
+    // Envoyer indicateur de frappe
+    this.chatService.sendTypingIndicator(true);
+    
+    // Arrêter l'indicateur après 3 secondes d'inactivité
+    if (this.typingTimeout) clearTimeout(this.typingTimeout);
+    this.typingTimeout = setTimeout(() => {
+      this.chatService.sendTypingIndicator(false);
+    }, 3000);
+  }
+
+  /** Ouvrir/fermer le composant d'upload */
+  toggleFileUpload() {
+    this.showFileUpload = !this.showFileUpload;
+    this.cdr.detectChanges();
+  }
+
+  /** Gérer la sélection d'un fichier */
+  onFileSelected(file: File) {
+    if (!this.selectedRoom) return;
+    
+    this.showFileUpload = false;
+    
+    // Upload du fichier avec un message optionnel
+    this.chatService.uploadFile(this.selectedRoom.id, file, 'Fichier partagé').subscribe({
+      next: (response) => {
+        console.log('File uploaded:', response);
+        // Le message avec le fichier arrivera via WebSocket
+      },
+      error: (error) => {
+        console.error('Upload error:', error);
+        this.toast.error("Impossible d'envoyer le fichier.");
+      }
+    });
+  }
+
+  /** Annuler l'upload */
+  onFileUploadCancelled() {
+    this.showFileUpload = false;
+    this.cdr.detectChanges();
   }
 
   /**
@@ -290,10 +372,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
     }
     const sent = this.chatService.markAsReadWs(messageIds);
     if (!sent) {
-      this.http.post(
-        `${environment.apiUrl}/chats/${roomId}/mark-read/`,
-        { message_ids: messageIds }
-      ).subscribe({ error: () => {} });
+      this.chatService.markAsReadHttp(roomId, messageIds).subscribe({ 
+        error: () => {} 
+      });
     }
   }
 

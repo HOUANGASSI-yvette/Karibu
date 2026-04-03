@@ -120,11 +120,8 @@
           </div>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-semibold text-stone-800 truncate">{{ selectedRoom.other_user_name }}</p>
-            <div class="flex items-center gap-1.5 mt-0.5">
-              <span class="w-1.5 h-1.5 rounded-full shrink-0"
-                    [class.bg-green-500]="chatService.isConnected()"
-                    [class.bg-stone-300]="!chatService.isConnected()"></span>
-              <span class="text-[11px] text-stone-400">{{ chatService.isConnected() ? 'En ligne' : 'Hors ligne' }}</span>
+            <div class="mt-0.5">
+              <app-user-status [status]="chatService.otherUserStatus()"></app-user-status>
             </div>
           </div>
 
@@ -259,7 +256,7 @@
               </div>
             }
 
-            <div class="flex" [class.justify-end]="msg.sender === currentUserId">
+            <div class="flex message-enter" [class.justify-end]="msg.sender === currentUserId">
               <div class="max-w-[min(75%,480px)] px-3 py-2 break-words"
                    [class.bg-amber-800]="msg.sender === currentUserId"
                    [class.text-white]="msg.sender === currentUserId"
@@ -268,6 +265,14 @@
                    [class.border-stone-200]="msg.sender !== currentUserId"
                    [class.text-stone-800]="msg.sender !== currentUserId">
                 <p class="text-[13px] leading-relaxed whitespace-pre-wrap m-0">{{ msg.content }}</p>
+                
+                <!-- Pièces jointes -->
+                @if (msg.attachments && msg.attachments.length > 0) {
+                  @for (attachment of msg.attachments; track attachment.id) {
+                    <app-message-attachment [attachment]="attachment"></app-message-attachment>
+                  }
+                }
+                
                 <p class="text-[10px] mt-1 text-right"
                    [class.text-amber-200]="msg.sender === currentUserId"
                    [class.text-stone-400]="msg.sender !== currentUserId">
@@ -276,6 +281,12 @@
               </div>
             </div>
           }
+
+          <!-- Typing indicator -->
+          <app-typing-indicator 
+            [isTyping]="isOtherUserTyping" 
+            [userName]="selectedRoom ? selectedRoom.other_user_name : 'Utilisateur'">
+          </app-typing-indicator>
 
           <div #messagesEnd></div>
         </div>
@@ -287,6 +298,16 @@
             <div class="flex items-center gap-1.5 text-[11px] text-red-500 mb-2">
               <lucide-icon [img]="OfflineIcon" class="w-3 h-3"></lucide-icon>
               Service indisponible
+            </div>
+          }
+
+          <!-- File Upload Component -->
+          @if (showFileUpload) {
+            <div class="mb-3">
+              <app-file-upload 
+                (fileSelected)="onFileSelected($event)"
+                (cancelled)="onFileUploadCancelled()">
+              </app-file-upload>
             </div>
           }
 
@@ -323,6 +344,13 @@
           }
 
           <div class="flex items-end gap-2.5">
+            <button (click)="toggleFileUpload()"
+                    type="button"
+                    class="upload-btn w-10 h-10 border border-stone-200 bg-stone-50 text-stone-600 flex items-center justify-center shrink-0
+                           hover:bg-stone-100 transition-colors"
+                    title="Joindre un fichier">
+              <lucide-icon [img]="PaperclipIcon" class="w-4 h-4"></lucide-icon>
+            </button>
             <textarea [(ngModel)]="newMessage"
                       (keydown)="sendOnEnter($event)"
                       (input)="autoResize($event)"

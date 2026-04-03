@@ -7,6 +7,7 @@ import { Router } from '@angular/router';
 export class AuthService {
   private apiUrl = 'http://localhost:8000/api/auth';
   public currentUser = signal<any>(null);
+  public token = signal<string | null>(null);
 
   constructor(private http: HttpClient, private router: Router) {
     this.loadUserFromStorage();
@@ -85,15 +86,26 @@ export class AuthService {
   redirectByRole(user: any) {
     const role = user?.role;
     if (role === 'proprietaire')     this.router.navigate(['/dashboard']);
-    else if (role === 'locataire')   this.router.navigate(['/listings']);
-    else if (role === 'admin')       this.router.navigate(['/admin']);
+    else if (role === 'locataire')   this.router.navigate(['/locataire']);
+    else if (role === 'admin')       this.router.navigate(['/dashboard']);
     else                             this.router.navigate(['/']);
+  }
+
+  logout() {
+    this.clearAuth();
+  }
+  
+  private clearAuth() {
+    this.currentUser.set(null);
+    this.token.set(null);
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    this.router.navigate(['/']);
   }
 
   getCurrentUser(): any {
     return this.currentUser() ?? JSON.parse(localStorage.getItem('user') || 'null');
   }
-
   // ── Privé ────────────────────────────────────────────────
   private setUser(user: any) {
     this.currentUser.set(user);

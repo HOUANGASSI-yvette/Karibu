@@ -630,3 +630,69 @@ app-navbar { flex-shrink: 0; }
 
  /* Auto-resize textarea */
  .chat-textarea { field-sizing: content; }
+
+/* ── Animations ────────────────────────────────────────────────────────────── */
+
+/* Animation d'apparition pour nouveaux messages */
+.message-enter {
+  animation: slideInMessage 0.3s ease-out forwards;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@keyframes slideInMessage {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation pour typing indicator */
+.typing-bounce {
+  animation: typingBounce 1.4s infinite ease-in-out;
+}
+
+.typing-bounce:nth-child(1) { animation-delay: 0s; }
+.typing-bounce:nth-child(2) { animation-delay: 0.16s; }
+.typing-bounce:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+/* Animation pour statut en ligne */
+.status-pulse {
+  animation: statusPulse 2s infinite;
+}
+
+@keyframes statusPulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Hover effects */
+.upload-btn {
+  transition: all 0.2s ease;
+}
+
+.upload-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* File upload drag state */
+.drag-active {
+  animation: dragPulse 0.5s ease-in-out;
+}
+
+@keyframes dragPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}

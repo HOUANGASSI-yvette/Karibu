@@ -1,0 +1,50 @@
+<div class="p-6">
+  <div class="mb-8">
+    <h1 class="text-2xl font-light text-stone-900 tracking-tight">Mes candidatures</h1>
+    <p class="text-stone-500 text-sm mt-1">Suivi de vos demandes de location</p>
+  </div>
+
+  <div class="bg-white border border-stone-200">
+    @if (isLoading()) {
+      <div class="flex items-center justify-center py-12">
+        <div class="animate-spin rounded-full h-8 w-8 border-2 border-amber-800 border-t-transparent"></div>
+      </div>
+    } @else {
+      @if (applications().length === 0) {
+        <div class="text-center py-12">
+          <svg class="w-16 h-16 text-stone-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <h3 class="text-lg font-medium text-stone-900 mb-2">Aucune candidature</h3>
+          <p class="text-stone-500">Vos candidatures de location apparaîtront ici</p>
+        </div>
+      } @else {
+        <div class="divide-y divide-stone-200">
+          @for (application of applications(); track application.id) {
+            <div class="p-6 hover:bg-stone-50 transition-colors">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <h3 class="font-medium text-stone-900">{{ application.property.title }}</h3>
+                  <p class="text-sm text-stone-500 mt-1">{{ application.property.address }}</p>
+                  <p class="text-xs text-stone-400 mt-2">
+                    Soumis le {{ application.submitted_date | date:'dd/MM/yyyy' }}
+                  </p>
+                  @if (application.message) {
+                    <p class="text-sm text-stone-600 mt-3 italic">
+                      "{{ application.message }}"
+                    </p>
+                  }
+                </div>
+                <div class="ml-4">
+                  <span [class]="'px-3 py-1 text-sm rounded ' + getStatusClass(application.status)">
+                    {{ getStatusText(application.status) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

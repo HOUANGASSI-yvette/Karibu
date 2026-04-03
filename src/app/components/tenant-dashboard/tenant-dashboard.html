@@ -1,0 +1,56 @@
+<div class="min-h-screen bg-stone-100 flex flex-col">
+
+  <app-dashboard-navbar
+    [userInitials]="userInitials"
+    [userName]="userName"
+    [userRole]="userRole"
+    (logoutClick)="logout()">
+  </app-dashboard-navbar>
+
+  <div class="flex-1 pt-16 max-w-7xl mx-auto w-full flex">
+
+    <app-tenant-sidebar
+      [activeSection]="activeSection"
+      (sectionChange)="onSectionChange($event)">
+    </app-tenant-sidebar>
+
+    <main class="flex-1 p-4 lg:p-8 overflow-auto">
+
+      @switch (activeSection) {
+        @case ('overview') {
+          <app-tenant-overview (sectionChange)="onSectionChange($event)" />
+        }
+        @case ('payments') {
+          <app-my-payments />
+        }
+        @case ('applications') {
+          <app-my-applications />
+        }
+        @case ('maintenance') {
+          <app-maintenance-requests />
+        }
+        @case ('messages') {
+          <div class="p-6">
+            <h1 class="text-2xl font-light text-stone-900 tracking-tight mb-4">Messages</h1>
+            <div class="bg-white border border-stone-200 p-6">
+              <p class="text-stone-500">Intégration du système de messagerie en cours</p>
+            </div>
+          </div>
+        }
+        @case ('rental') {
+          <div class="p-6">
+            <h1 class="text-2xl font-light text-stone-900 tracking-tight mb-4">Mon logement</h1>
+            <div class="bg-white border border-stone-200 p-6">
+              <p class="text-stone-500">Détails de votre logement en cours d'implémentation</p>
+            </div>
+          </div>
+        }
+        @default {
+          <app-tenant-overview (sectionChange)="onSectionChange($event)" />
+        }
+      }
+
+    </main>
+  </div>
+
+</div>

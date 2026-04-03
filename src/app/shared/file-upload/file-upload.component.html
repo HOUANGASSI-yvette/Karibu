@@ -1,0 +1,83 @@
+<div class="flex flex-col gap-3">
+  <!-- File Input (hidden) -->
+  <input
+    #fileInput
+    type="file"
+    class="hidden"
+    (change)="onFileInputChange($event)"
+  />
+
+  <!-- Drag & Drop Zone -->
+  <div
+    *ngIf="!selectedFile"
+    class="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors"
+    [class.border-amber-400]="isDragging"
+    [class.bg-amber-50]="isDragging"
+    [class.border-gray-300]="!isDragging"
+    [class.bg-gray-50]="!isDragging"
+    (click)="openFilePicker()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
+  >
+    <lucide-icon [img]="PaperclipIcon" class="w-10 h-10 mx-auto mb-3 text-gray-400"></lucide-icon>
+    <p class="text-sm text-gray-600 mb-1">Glissez un fichier ici ou cliquez pour parcourir</p>
+    <p class="text-xs text-gray-400">
+      Images (10MB) • Documents (20MB) • Vidéo (50MB) • Audio (10MB)
+    </p>
+  </div>
+
+  <!-- File Preview -->
+  <div *ngIf="selectedFile" class="border rounded-lg p-4 bg-white">
+    <div class="flex items-start gap-3">
+      <!-- Preview Image -->
+      <div 
+        *ngIf="previewUrl" 
+        class="w-16 h-16 rounded bg-gray-100 flex-shrink-0 overflow-hidden"
+      >
+        <img [src]="previewUrl" alt="Preview" class="w-full h-full object-cover" />
+      </div>
+      
+      <!-- File Icon -->
+      <div 
+        *ngIf="!previewUrl" 
+        class="w-16 h-16 rounded bg-gray-100 flex-shrink-0 flex items-center justify-center"
+      >
+        <lucide-icon [img]="fileIcon" class="w-8 h-8 text-gray-500"></lucide-icon>
+      </div>
+
+      <!-- File Info -->
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-gray-900 truncate">{{ selectedFile.name }}</p>
+        <p class="text-xs text-gray-500">{{ fileSizeFormatted }}</p>
+      </div>
+
+      <!-- Remove Button -->
+      <button
+        type="button"
+        (click)="removeFile()"
+        class="p-1 hover:bg-gray-100 rounded transition-colors"
+      >
+        <lucide-icon [img]="XIcon" class="w-4 h-4 text-gray-400"></lucide-icon>
+      </button>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-2 mt-4">
+      <button
+        type="button"
+        (click)="confirm()"
+        class="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium"
+      >
+        Envoyer
+      </button>
+      <button
+        type="button"
+        (click)="cancel()"
+        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+      >
+        Annuler
+      </button>
+    </div>
+  </div>
+</div>

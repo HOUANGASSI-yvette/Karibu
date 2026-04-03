@@ -4,16 +4,7 @@ import { Observable, Subject, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { AuthService } from './auth.service';
-
-export interface Notification {
-  id:         number;
-  type:       'new_message' | 'booking_request' | 'booking_confirmed' | 'booking_canceled';
-  title:      string;
-  message:    string;
-  is_read:    boolean;
-  created_at: string;
-  data?:      any;
-}
+import { Notification, NotificationType } from '../models/notification.models';
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
@@ -58,10 +49,24 @@ export class NotificationService {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'notification') {
-            this.newNotification$.next(data.notification);
+            // Le backend envoie directement les données de la notification
+            // Format: { type: 'notification', notification_type: '...', title: '...', message: '...', timestamp: '...' }
+            const notification: Notification = {
+              id: 0, // Sera mis à jour lors du fetch
+              type: data.notification_type,
+              title: data.title,
+              message: data.message,
+              is_read: false,
+              created_at: data.timestamp,
+              related_object_id: data.related_object_id,
+              related_object_type: data.related_object_type
+            };
+            this.newNotification$.next(notification);
             this.unreadCount.update(n => n + 1);
           }
-        } catch {}
+        } catch (e) {
+          console.error('Notification WS parse error:', e);
+        }
       };
 
       this.ws.onerror = () => {

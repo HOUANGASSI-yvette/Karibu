@@ -1,0 +1,46 @@
+<div class="p-6">
+  <div class="mb-8">
+    <h1 class="text-2xl font-light text-stone-900 tracking-tight">Demandes de maintenance</h1>
+    <p class="text-stone-500 text-sm mt-1">Gérez vos demandes de maintenance et réparations</p>
+  </div>
+
+  <div class="bg-white border border-stone-200 p-6">
+    @if (isLoading()) {
+      <div class="flex items-center justify-center py-12">
+        <div class="animate-spin rounded-full h-8 w-8 border-2 border-amber-800 border-t-transparent"></div>
+      </div>
+    } @else {
+      @if (requests().length === 0) {
+        <div class="text-center py-12">
+          <svg class="w-16 h-16 text-stone-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 9.172V5L8 4z"/>
+          </svg>
+          <h3 class="text-lg font-medium text-stone-900 mb-2">Aucune demande de maintenance</h3>
+          <p class="text-stone-500">Vos demandes de maintenance apparaîtront ici</p>
+        </div>
+      } @else {
+        <div class="space-y-4">
+          @for (request of requests(); track request.id) {
+            <div class="border border-stone-200 p-4 hover:bg-stone-50 transition-colors">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <h3 class="font-medium text-stone-900">{{ request.title }}</h3>
+                  <p class="text-sm text-stone-500 mt-1">{{ request.description }}</p>
+                  <p class="text-xs text-stone-400 mt-2">{{ request.created_date | date:'dd/MM/yyyy' }}</p>
+                </div>
+                <div class="ml-4 flex flex-col items-end">
+                  <span [class]="'px-2 py-1 text-xs rounded ' + getStatusClass(request.status)">
+                    {{ getStatusText(request.status) }}
+                  </span>
+                  <span [class]="'px-2 py-1 text-xs rounded mt-2 ' + getPriorityClass(request.priority)">
+                    {{ getPriorityText(request.priority) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

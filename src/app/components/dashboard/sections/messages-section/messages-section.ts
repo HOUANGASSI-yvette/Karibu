@@ -2,7 +2,8 @@ import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { LucideAngularModule, MessageSquare, RefreshCw, ExternalLink } from 'lucide-angular';
-import { ChatService, ChatRoom } from '../../../../services/chat.service';
+import { ChatService } from '../../../../services/chat.service';
+import { ChatRoom } from '../../../../models/chat.models';
 
 @Component({
   selector: 'app-messages-section',
