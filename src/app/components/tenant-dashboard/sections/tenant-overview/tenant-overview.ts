@@ -13,20 +13,23 @@ import { TenantService, TenantOverview } from '../../../../services/tenant.servi
 export class TenantOverviewComponent implements OnInit {
   @Output() sectionChange = new EventEmitter<TenantSection>();
 
-  private tenantService = inject(TenantService);
+  public tenantService = inject(TenantService);
   
-  overview = signal<TenantOverview | null>(null);
-  isLoading = signal(false);
-
   Math = Math; // Pour utiliser Math dans le template
+  currentDate = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
 
   ngOnInit() {
     this.loadOverview();
   }
 
   loadOverview() {
-    this.tenantService.loadOverview().subscribe((data: TenantOverview) => {
-      this.overview.set(data);
+    this.tenantService.loadOverview().subscribe({
+      next: (data: TenantOverview) => {
+        console.log('Overview data loaded:', data); // Pour débugger
+      },
+      error: (error) => {
+        console.error('Error loading overview:', error);
+      }
     });
   }
 
@@ -35,7 +38,7 @@ export class TenantOverviewComponent implements OnInit {
   }
 
   nextPaymentDays(): number | null {
-    const overview = this.overview();
+    const overview = this.tenantService.overview();
     if (!overview?.next_payment?.due_date) return null;
     
     const dueDate = new Date(overview.next_payment.due_date);

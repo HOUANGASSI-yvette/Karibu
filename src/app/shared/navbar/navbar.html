@@ -91,7 +91,13 @@
                      class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
                     <lucide-icon [img]="SearchIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Mes recherches
                   </a>
+
+                  <a routerLink="/locataire" (click)="closeUserMenu()"
+                     class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
+                    <lucide-icon [img]="DashboardIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Tableau de bord
+                  </a>
                 }
+
                 <a routerLink="/profil" (click)="closeUserMenu()"
                    class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
                   <lucide-icon [img]="UserIcon" class="w-4 h-4 text-stone-400"></lucide-icon>Mon profil

@@ -93,51 +93,31 @@ export class TenantService {
   // Overview - données générales du locataire
   loadOverview(): Observable<TenantOverview> {
     this.isLoadingOverview.set(true);
-    return new Observable(observer => {
-      // Simulating API call for now - replace with actual endpoint
-      setTimeout(() => {
-        const mockData: TenantOverview = {
-          tenant_name: 'John Doe',
-          property_address: '123 Rue de la Paix, Paris',
-          current_lease: {
-            id: 1,
-            start_date: '2024-01-01',
-            end_date: '2024-12-31',
-            monthly_rent: 1200,
-            status: 'active'
-          },
-          next_payment: {
-            amount: 1200,
-            due_date: '2024-04-01',
-            status: 'pending'
-          },
-          recent_applications: [
-            {
-              id: 1,
-              property: '456 Avenue des Champs',
-              status: 'pending',
-              submitted_date: '2024-03-15'
-            }
-          ],
-          recent_notifications: [
-            {
-              id: 1,
-              message: 'Votre loyer est dû dans 3 jours',
-              date: '2024-03-28',
-              read: false
-            }
-          ],
+    return this.http.get<TenantOverview>(`${this.apiUrl}/bails/tenant/overview/`).pipe(
+      map((response: TenantOverview) => {
+        this.overview.set(response);
+        this.isLoadingOverview.set(false);
+        return response;
+      }),
+      catchError(() => {
+        this.isLoadingOverview.set(false);
+        // Fallback data si l'API échoue
+        const fallbackData: TenantOverview = {
+          tenant_name: 'Utilisateur',
+          property_address: undefined,
+          current_lease: undefined,
+          next_payment: undefined,
+          recent_applications: [],
+          recent_notifications: [],
           maintenance_requests: {
-            total: 2,
-            pending: 1
+            total: 0,
+            pending: 0
           }
         };
-        this.overview.set(mockData);
-        this.isLoadingOverview.set(false);
-        observer.next(mockData);
-        observer.complete();
-      }, 500);
-    });
+        this.overview.set(fallbackData);
+        return of(fallbackData);
+      })
+    );
   }
 
   // Paiements - utilise l'endpoint mes-paiements

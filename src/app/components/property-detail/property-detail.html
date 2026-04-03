@@ -358,20 +358,13 @@
                   <!-- Prix -->
                   <div>
                     <label class="block text-xs font-medium text-stone-600 uppercase tracking-wider mb-1.5">
-                      Prix convenu (CFA)
+                      Prix actuel du logement  (CFA)
                     </label>
-                    <input type="number" [(ngModel)]="prixTotal" [min]="0"
+                    <input disabled type="number" [(ngModel)]="prixTotal" [min]="0"
                            class="w-full border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm focus:outline-none focus:border-amber-400 focus:bg-white transition-all">
                   </div>
 
-                  <!-- Options -->
-                  <div class="flex items-center gap-3">
-                    <input type="checkbox" [(ngModel)]="chargesIncluses" id="charges"
-                           class="accent-amber-800">
-                    <label for="charges" class="text-sm text-stone-600 cursor-pointer">
-                      Charges incluses
-                    </label>
-                  </div>
+
 
                   <!-- Dépôt de garantie -->
                   <div>

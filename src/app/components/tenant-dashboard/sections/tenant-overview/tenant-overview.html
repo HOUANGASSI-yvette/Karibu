@@ -1,31 +1,70 @@
 <div class="mb-8">
   <h1 class="text-2xl font-light text-stone-900 tracking-tight">Vue d'ensemble</h1>
-  <p class="text-stone-500 text-sm mt-1">Mars 2026 · Résumé de votre espace locataire</p>
+  <p class="text-stone-500 text-sm mt-1">{{ currentDate }} · Résumé de votre espace locataire</p>
+</div>
+
+<!-- Loading State -->
+<div *ngIf="tenantService.isLoadingOverview()" class="flex items-center justify-center py-8">
+  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
+  <span class="ml-2 text-stone-500">Chargement...</span>
 </div>
 
 <!-- KPI Cards -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+<div *ngIf="!tenantService.isLoadingOverview()" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <!-- Prochain loyer -->
   <div class="bg-white border border-stone-200 p-5 hover:border-amber-300 transition-colors">
     <p class="text-xs text-stone-500 uppercase tracking-wider mb-2">Prochain loyer</p>
-    <p class="text-2xl font-bold text-stone-900">1 250 €</p>
-    <p class="text-xs mt-1">
-      <span class="text-amber-600">Dû dans 5 jours</span>
-    </p>
-    <p class="text-xs text-stone-400 mt-0.5">01 avril 2026</p>
+    <ng-container *ngIf="tenantService.overview()?.next_payment; else noPayment">
+      <p class="text-2xl font-bold text-stone-900">
+        {{ tenantService.overview()!.next_payment!.amount | currency:'EUR':'symbol':'1.0-0' }}
+      </p>
+      <p class="text-xs mt-1">
+        <span [ngClass]="tenantService.overview()!.next_payment!.status === 'overdue' ? 'text-red-600' : 'text-amber-600'">
+          @if (tenantService.overview()!.next_payment!.status === 'overdue') {
+            En retard
+          } @else if (nextPaymentDays() !== null) {
+            Dû dans {{ nextPaymentDays() }} jour(s)
+          } @else {
+            Échéance proche
+          }
+        </span>
+      </p>
+      <p class="text-xs text-stone-400 mt-0.5">
+        {{ tenantService.overview()!.next_payment!.due_date | date:'dd MMMM yyyy':'':'fr' }}
+      </p>
+    </ng-container>
+    <ng-template #noPayment>
+      <p class="text-2xl font-bold text-stone-400">-</p>
+      <p class="text-xs text-stone-400 mt-1">Aucun paiement en attente</p>
+    </ng-template>
   </div>
 
+  <!-- Candidatures -->
   <div class="bg-white border border-stone-200 p-5 hover:border-amber-300 transition-colors cursor-pointer" (click)="setSection('applications')">
     <p class="text-xs text-stone-500 uppercase tracking-wider mb-2">Candidatures</p>
-    <p class="text-2xl font-bold text-stone-900">2 <span class="text-stone-400 font-light text-lg">en cours</span></p>
+    <p class="text-2xl font-bold text-stone-900">
+      {{ tenantService.overview()?.recent_applications?.length || 0 }} 
+      <span class="text-stone-400 font-light text-lg">en cours</span>
+    </p>
     <p class="text-xs text-amber-700 mt-1">→ Voir mes candidatures</p>
   </div>
 
+  <!-- Maintenance -->
   <div class="bg-white border border-stone-200 p-5 hover:border-amber-300 transition-colors cursor-pointer" (click)="setSection('maintenance')">
     <p class="text-xs text-stone-500 uppercase tracking-wider mb-2">Maintenance</p>
-    <p class="text-2xl font-bold text-stone-900">1</p>
-    <p class="text-xs text-amber-700 mt-1">→ Demande en attente</p>
+    <p class="text-2xl font-bold text-stone-900">
+      {{ tenantService.overview()?.maintenance_requests?.pending || 0 }}
+    </p>
+    <p class="text-xs text-amber-700 mt-1">
+      @if ((tenantService.overview()?.maintenance_requests?.pending || 0) > 0) {
+        → Demande(s) en attente
+      } @else {
+        Aucune demande
+      }
+    </p>
   </div>
 
+  <!-- Messages -->
   <div class="bg-white border border-stone-200 p-5 hover:border-amber-300 transition-colors cursor-pointer" (click)="setSection('messages')">
     <p class="text-xs text-stone-500 uppercase tracking-wider mb-2">Messages</p>
     <p class="text-2xl font-bold text-stone-900">3</p>
